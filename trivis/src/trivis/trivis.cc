@@ -1045,23 +1045,23 @@ std::optional<std::vector<std::vector<bool>>> Trivis::ComputeVisibilityGraphPoin
         if (!p_location) {
             continue;
         }
-        std::vector<int> visible_vertices;
+        std::vector<int> visible_points;
         if (!p_location->snap_nodes.empty()) {
             for (int node_id: p_location->snap_nodes) {
-                auto visible_vertices_opt = ComputeVisibleVertices(node_id, nullptr, radius, stats);
-                if (!visible_vertices_opt) {
+                auto visible_points_opt = ComputeVisiblePoints(node_id, points, points_locations, radius, stats);
+                if (!visible_points_opt) {
                     continue;
                 }
-                visible_vertices.insert(visible_vertices.begin(), visible_vertices_opt->begin(), visible_vertices_opt->end());
+                visible_points.insert(visible_points.begin(), visible_points_opt->begin(), visible_points_opt->end());
             }
         } else {
-            auto visible_vertices_opt = ComputeVisibleVertices(p, p_location->triangle_id, nullptr, radius, stats);
-            if (!visible_vertices_opt) {
+            auto visible_points_opt = ComputeVisiblePoints(p, p_location->triangle_id, points, points_locations, radius, stats);
+            if (!visible_points_opt) {
                 continue;
             }
-            visible_vertices = std::move(*visible_vertices_opt);
+            visible_points = std::move(*visible_points_opt);
         }
-        for (int visible_point_id: visible_vertices) {
+        for (int visible_point_id: visible_points) {
             ret[point_id][visible_point_id] = ret[visible_point_id][point_id] = true;
         }
         if (stats) {
