@@ -15,7 +15,7 @@
 
 #include "trivis/mesh/tri_mesh.h"
 
-#include "trivis/bucketing/bucketing.h"
+#include "trivis/pl/point_location.h"
 
 #include <memory>
 #include <utility>
@@ -32,6 +32,13 @@ public:
     ///================///
 
     /// ##### STRUCTURES ##### ///
+
+    struct ParamDefault {
+        static constexpr double pl_bucket_size = 1.0;
+        static constexpr bool pl_optimize_bucket_triangles = false;
+        static constexpr std::array<double, 10> pl_eps1 = {1e-18, 1e-17, 1e-16, 1e-15, 1e-14, 1e-13, 1e-12, 1e-11, 1e-10, 1e-9};
+        static constexpr double pl_eps2_squared = 1e-12 * 1e-12;
+    };
 
     struct Stats {
         int num_expansions = 0;
@@ -54,9 +61,9 @@ public:
         std::optional<int> node_id;
     };
 
-    struct LocatePointResult {
+    struct PointLocationResult {
         int triangle_id;
-        std::vector<int> snap_nodes;
+        std::vector<int> snap_to_nodes;
     };
 
     /// ##### CONSTRUCTORS ##### ///
@@ -79,6 +86,8 @@ public:
     /// Destructor.
     virtual ~Trivis() = default;
 
+    /// Constructor with map initialization.
+
     /// ##### GETTERS ##### ///
 
     [[nodiscard]] bool has_map() const {
@@ -89,8 +98,8 @@ public:
         return _has_mesh;
     }
 
-    [[nodiscard]] bool has_bucketing() const {
-        return _has_mesh;
+    [[nodiscard]] bool has_pl() const {
+        return _has_pl;
     }
 
     [[nodiscard]] const auto &limits() const {
@@ -113,51 +122,89 @@ public:
         return _triangles;
     }
 
-    [[nodiscard]] const auto &bucketing() const {
-        assert(_has_bucketing);
-        return _bucketing;
+    [[nodiscard]] const auto &pl() const {
+        assert(_has_pl);
+        return _pl;
     }
 
     /// ##### INITIALIZATION ##### ///
 
     void SetMap(geom::PolyMap map);
 
-    void ConstructMeshConstrainedDelaunayTriangulation();
+    void ConstructMeshCDT();
 
     void SetMesh(
         mesh::TriMesh mesh,
         std::optional<geom::PolyMap> map = std::nullopt
     );
 
-    void FillBucketing(
+    void FillPointLocationBuckets(
         std::optional<double> bucket_size = std::nullopt,
-        std::optional<double> mean_bucket_triangle_count_max = std::nullopt
+        std::optional<double> max_avg_triangle_count_in_bucket = std::nullopt
     );
 
-    void OptimizeBuckets();
+    void OptimizePointLocationBucketTriangles();
 
-    void SetBucketingExact(std::optional<bool> exact = std::nullopt) {
-        assert(_has_bucketing);
-        _bucketing.SetExact(exact);
+    void InitPointLocation(
+        std::optional<double> bucket_size,
+        std::optional<double> max_avg_triangle_count_in_bucket,
+        std::optional<bool> optimize_bucket_triangles = std::nullopt
+    ) {
+        assert(_has_mesh);
+        FillPointLocationBuckets(bucket_size, max_avg_triangle_count_in_bucket);
+        if (optimize_bucket_triangles.value_or(ParamDefault::pl_optimize_bucket_triangles)) {
+            OptimizePointLocationBucketTriangles();
+        }
     }
 
-    void SetBucketingEpsilons(const std::optional<std::vector<double>> &epsilons = std::nullopt) {
-        assert(_has_bucketing);
-        _bucketing.SetEpsilons(epsilons);
+    void SetPointLocationEpsilons(
+        const std::optional<std::vector<double>> &eps1_seq = std::nullopt,
+        std::optional<double> eps2_squared = std::nullopt
+    ) {
+        _pl_eps1_seq = eps1_seq.value_or(std::vector<double>{ParamDefault::pl_eps1.begin(), ParamDefault::pl_eps1.end()});
+        _pl_eps2_squared = eps2_squared.value_or(ParamDefault::pl_eps2_squared);
+    }
+
+    void Init(
+        geom::PolyMap map,
+        std::optional<double> pl_bucket_size = std::nullopt,
+        std::optional<double> pl_max_avg_triangle_count_in_bucket = std::nullopt,
+        std::optional<bool> pl_optimize_bucket_triangles = std::nullopt,
+        const std::optional<std::vector<double>> &pl_eps1_seq = std::nullopt,
+        std::optional<double> pl_eps2_squared = std::nullopt
+    ) {
+        SetMap(std::move(map));
+        ConstructMeshCDT();
+        InitPointLocation(pl_bucket_size, pl_max_avg_triangle_count_in_bucket, pl_optimize_bucket_triangles.value_or(ParamDefault::pl_optimize_bucket_triangles));
+        SetPointLocationEpsilons(pl_eps1_seq, pl_eps2_squared);
+    }
+
+    void Init(
+        mesh::TriMesh mesh,
+        std::optional<geom::PolyMap> map = std::nullopt,
+        std::optional<double> pl_bucket_size = std::nullopt,
+        std::optional<double> pl_max_avg_triangle_count_in_bucket = std::nullopt,
+        std::optional<bool> pl_optimize_bucket_triangles = std::nullopt,
+        const std::optional<std::vector<double>> &pl_eps1_seq = std::nullopt,
+        std::optional<double> pl_eps2_squared = std::nullopt
+    ) {
+        SetMesh(std::move(mesh), std::move(map));
+        InitPointLocation(pl_bucket_size, pl_max_avg_triangle_count_in_bucket, pl_optimize_bucket_triangles.value_or(ParamDefault::pl_optimize_bucket_triangles));
+        SetPointLocationEpsilons(pl_eps1_seq, pl_eps2_squared);
     }
 
     /// ##### LOCATE POINT ##### ///
 
-    [[nodiscard]] std::optional<LocatePointResult> LocatePoint(
+    [[nodiscard]] std::optional<PointLocationResult> LocatePoint(
         const geom::FPoint &q,
-        double epsilon = 1e-24
+        const std::optional<double> &eps2_squared = std::nullopt
     ) const;
 
     /// ##### VISIBILITY: INTERSECTION OF RAY AND OBSTACLE ##### ///
 
     std::optional<ObstacleIntersection> ComputeObstacleIntersection(
         const geom::FPoint &q,
-        const LocatePointResult &q_location,
+        const PointLocationResult &q_location,
         int q_triangle_id,
         const geom::FPoint &direction,
         Stats *stats = nullptr
@@ -180,7 +227,7 @@ public:
 
     std::optional<bool> ComputeVisibilityBetween(
         const geom::FPoint &q,
-        const LocatePointResult &q_location,
+        const PointLocationResult &q_location,
         const geom::FPoint &p,
         std::optional<double> radius = std::nullopt,
         Stats *stats = nullptr
@@ -205,7 +252,7 @@ public:
 
     std::optional<std::vector<int>> ComputeVisibleVertices(
         const geom::FPoint &q,
-        const LocatePointResult &q_location,
+        const PointLocationResult &q_location,
         const std::vector<bool> *tabu_vertices = nullptr,
         std::optional<double> radius = std::nullopt,
         Stats *stats = nullptr
@@ -230,9 +277,9 @@ public:
 
     std::optional<std::vector<int>> ComputeVisiblePoints(
         const geom::FPoint &q,
-        const LocatePointResult &q_location,
+        const PointLocationResult &q_location,
         const geom::FPoints &points,
-        const std::vector<std::optional<LocatePointResult>> &points_locations,
+        const std::vector<std::optional<PointLocationResult>> &points_locations,
         std::optional<double> radius = std::nullopt,
         Stats *stats = nullptr
     ) const;
@@ -241,7 +288,7 @@ public:
         const geom::FPoint &q,
         int q_triangle_id,
         const geom::FPoints &points,
-        const std::vector<std::optional<LocatePointResult>> &points_locations,
+        const std::vector<std::optional<PointLocationResult>> &points_locations,
         std::optional<double> radius = std::nullopt,
         Stats *stats = nullptr
     ) const;
@@ -249,7 +296,7 @@ public:
     std::optional<std::vector<int>> ComputeVisiblePoints(
         int node_id,
         const geom::FPoints &points,
-        const std::vector<std::optional<LocatePointResult>> &points_locations,
+        const std::vector<std::optional<PointLocationResult>> &points_locations,
         std::optional<double> radius = std::nullopt,
         Stats *stats = nullptr
     ) const;
@@ -287,7 +334,7 @@ public:
 
     std::optional<std::vector<std::vector<int>>> ComputeVisibilityGraphPointNode(
         const geom::FPoints &points,
-        const std::vector<std::optional<LocatePointResult>> &points_locations,
+        const std::vector<std::optional<PointLocationResult>> &points_locations,
         const std::vector<bool> *tabu_vertices = nullptr,
         std::optional<double> radius = std::nullopt,
         Stats *stats = nullptr
@@ -295,7 +342,7 @@ public:
 
     std::optional<std::vector<std::vector<bool>>> ComputeVisibilityGraphPointNodeBoolMatrix(
         const geom::FPoints &points,
-        const std::vector<std::optional<LocatePointResult>> &points_locations,
+        const std::vector<std::optional<PointLocationResult>> &points_locations,
         const std::vector<bool> *tabu_vertices = nullptr,
         std::optional<double> radius = std::nullopt,
         Stats *stats = nullptr
@@ -303,14 +350,14 @@ public:
 
     std::optional<std::vector<std::vector<int>>> ComputeVisibilityGraphPointPoint(
         const geom::FPoints &points,
-        const std::vector<std::optional<LocatePointResult>> &points_locations,
+        const std::vector<std::optional<PointLocationResult>> &points_locations,
         std::optional<double> radius = std::nullopt,
         Stats *stats = nullptr
     ) const;
 
     std::optional<std::vector<std::vector<bool>>> ComputeVisibilityGraphPointPointBoolMatrix(
         const geom::FPoints &points,
-        const std::vector<std::optional<LocatePointResult>> &points_locations,
+        const std::vector<std::optional<PointLocationResult>> &points_locations,
         std::optional<double> radius = std::nullopt,
         Stats *stats = nullptr
     ) const;
@@ -319,7 +366,7 @@ public:
 
     std::optional<AbstractVisibilityRegion> ComputeVisibilityRegion(
         const geom::FPoint &q,
-        const LocatePointResult &q_location,
+        const PointLocationResult &q_location,
         std::optional<double> radius = std::nullopt,
         Stats *stats = nullptr
     ) const;
@@ -339,7 +386,7 @@ public:
 
     std::optional<AbstractVisibilityRegion> ComputeVisibilityRegionIterative(
         const geom::FPoint &q,
-        const LocatePointResult &q_location,
+        const PointLocationResult &q_location,
         std::optional<double> radius = std::nullopt,
         Stats *stats = nullptr
     ) const;
@@ -359,7 +406,7 @@ public:
 
     std::optional<AbstractVisibilityRegion> ComputeVisibilityRegionWithHistory(
         const geom::FPoint &q,
-        const LocatePointResult &q_location,
+        const PointLocationResult &q_location,
         std::vector<HistoryStep> &history,
         std::optional<double> radius = std::nullopt,
         Stats *stats = nullptr
@@ -416,7 +463,7 @@ public:
 
     std::optional<RadialVisibilityRegion> ComputeRadialVisibilityRegion(
         const geom::FPoint &q,
-        const LocatePointResult &q_location,
+        const PointLocationResult &q_location,
         std::optional<double> radius,
         bool intersections_fast_mode = true,
         bool remove_antennas = true,
@@ -457,12 +504,14 @@ private:
 
     bool _has_map = false;
     bool _has_mesh = false;
-    bool _has_bucketing = false;
+    bool _has_pl = false;
     geom::FLimits _limits;
     geom::PolyMap _map;
     mesh::TriMesh _mesh;
     geom::FPolygons _triangles;
-    bucketing::Bucketing _bucketing;
+    pl::PointLocation _pl;
+    std::vector<double> _pl_eps1_seq{ParamDefault::pl_eps1.begin(), ParamDefault::pl_eps1.end()};
+    double _pl_eps2_squared = ParamDefault::pl_eps2_squared;
 
     /// ##### EXPAND EDGE: INTERSECTION OF RAY AND OBSTACLE ##### ///
 

@@ -179,7 +179,7 @@ int MainBody(const ProgramOptionVariables &pov) {
         }
         vis.SetMap(std::move(map)); // Set the map to TriVis instance.
     }
-    vis.ConstructMeshConstrainedDelaunayTriangulation();
+    vis.ConstructMeshCDT();
     LOGF_INF("<< DONE. It took " << clock.TimeInSeconds() << " seconds.");
 
     const auto &lim = vis.limits();

@@ -1,5 +1,5 @@
 /**
- * File:   constrained_delaunay.cc
+ * File:   cdt.cc
  *
  * Date:   23.03.2022
  * Author: Jan Mikula
@@ -7,7 +7,7 @@
  *
  */
 
-#include "trivis/mesh/constrained_delaunay.h"
+#include "trivis/mesh/cdt.h"
 
 #include <cstring>
 
@@ -26,10 +26,10 @@ using namespace trivis;
 using namespace trivis::geom;
 using namespace trivis::mesh;
 
-void mesh::TriangulateMapConstrainedDelaunay(
-    const PolyMap &map,
+void mesh::TriangulateMapCDT(
+    const geom::PolyMap &map,
     TriMesh &mesh,
-    FPolygons &triangles
+    geom::FPolygons &triangles
 ) {
 
     int num_points, num_segments, num_holes;
@@ -204,7 +204,7 @@ void mesh::TriangulateMapConstrainedDelaunay(
     }
 
     // Sort structures.
-    Reorganize(mesh);
+    Preorder(mesh);
 
     // Cleaning up:
     delete[] c_options;
@@ -229,9 +229,9 @@ void mesh::TriangulateMapConstrainedDelaunay(
 
 }
 
-void mesh::TriangulateMapConstrainedDelaunay(
+void mesh::TriangulateMapCDT(
     const geom::FPolygons &polygons,
-    FPolygons &triangles
+    geom::FPolygons &triangles
 ) {
 
     int num_polygons = static_cast<int>(polygons.size());
@@ -363,10 +363,10 @@ void mesh::TriangulateMapConstrainedDelaunay(
 
 }
 
-void mesh::TriangulateMapConstrainedConformingDelaunay(
-    const PolyMap &map,
+void mesh::TriangulateMapCCDT(
+    const geom::PolyMap &map,
     double max_circumradius,
-    FPolygons &triangles
+    geom::FPolygons &triangles
 ) {
 
     int num_points, num_segments, num_holes;

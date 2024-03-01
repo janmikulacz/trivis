@@ -13,7 +13,7 @@
 #include <iomanip>
 #include <cassert>
 
-#include "trivis/mesh/constrained_delaunay.h"
+#include "trivis/mesh/cdt.h"
 
 #include "trivis/geom/generic_geom_utils.h"
 #include "trivis/geom/robust_geometry.h"
@@ -37,12 +37,12 @@ void Trivis::SetMap(PolyMap map) {
     _limits = map.limits();
     _map = std::move(map);
     _has_map = true;
-    _has_bucketing = false;
+    _has_pl = false;
 }
 
-void Trivis::ConstructMeshConstrainedDelaunayTriangulation() {
+void Trivis::ConstructMeshCDT() {
     assert(_has_map);
-    mesh::TriangulateMapConstrainedDelaunay(_map, _mesh, _triangles);
+    mesh::TriangulateMapCDT(_map, _mesh, _triangles);
     _has_mesh = true;
 }
 
@@ -68,71 +68,66 @@ void Trivis::SetMesh(
     } else {
         _has_map = false;
     }
-    _has_bucketing = false;
+    _has_pl = false;
 }
 
-void Trivis::FillBucketing(
+void Trivis::FillPointLocationBuckets(
     std::optional<double> bucket_size,
-    std::optional<double> mean_bucket_triangle_count_max
+    std::optional<double> max_avg_triangle_count_in_bucket
 ) {
     assert(_has_mesh);
-    if (!mean_bucket_triangle_count_max) {
-        if (bucket_size) {
-            _bucketing.Init(_limits, *bucket_size);
-        } else {
-            _bucketing.Init(_limits); // internal default value is used
-        }
-        _bucketing.FillBuckets(_triangles);
-        _has_bucketing = true;
+    if (!max_avg_triangle_count_in_bucket) {
+        _pl.Init(_limits, _triangles, bucket_size.value_or(ParamDefault::pl_bucket_size));
+        _has_pl = true;
         return;
     }
     // Choose bucket size dynamically.
-    auto mean_bucket_triangle_count = static_cast<double>(_triangles.size());
+    auto avg_triangle_count = static_cast<double>(_triangles.size());
     double bucket_size_temp = std::max(_limits.x_max - _limits.x_min, _limits.y_max - _limits.y_min) / 2.0;
-    while (mean_bucket_triangle_count > mean_bucket_triangle_count_max) {
+    while (avg_triangle_count > max_avg_triangle_count_in_bucket) {
         bucket_size_temp /= 2.0;
-        _bucketing.Init(_limits, bucket_size_temp);
-        _bucketing.FillBuckets(_triangles);
+        _pl.Init(_limits, _triangles, bucket_size_temp);
         double triangles_per_bucket_total = 0.0;
-        for (const auto &bucket: _bucketing.buckets().data()) {
+        for (const auto &bucket: _pl.buckets().data()) {
             triangles_per_bucket_total += static_cast<double>(bucket.size());
         }
-        mean_bucket_triangle_count = triangles_per_bucket_total / static_cast<double>(_bucketing.nrow() * _bucketing.ncol());
+        avg_triangle_count = triangles_per_bucket_total / static_cast<double>(_pl.n_row() * _pl.n_col());
     }
-    _has_bucketing = true;
+    _has_pl = true;
 }
 
-void Trivis::OptimizeBuckets() {
-    assert(_has_bucketing);
-    _bucketing.RemoveDuplicateBucketTriangles();
-    _bucketing.OrderBucketTrianglesByIntersectionArea(_triangles);
+void Trivis::OptimizePointLocationBucketTriangles() {
+    assert(_has_pl);
+    _pl.RemoveDuplicateTrianglesInBuckets();
+    _pl.SortTrianglesInBucketsByLargestIntersectionArea(_triangles);
 }
 
 /// ##### LOCATE POINT ##### ///
 
-std::optional<Trivis::LocatePointResult> Trivis::LocatePoint(
+std::optional<Trivis::PointLocationResult> Trivis::LocatePoint(
     const FPoint &q,
-    double epsilon
+    const std::optional<double> &eps2_squared
 ) const {
     assert(_has_mesh);
-    assert(_has_bucketing);
-    std::optional<int> tri_id_opt = _bucketing.FindTriangle(q, _triangles);
+    assert(_has_pl);
+    std::optional<int> tri_id_opt = _pl.FindTriangle(q, _triangles, _pl_eps1_seq);
     if (!tri_id_opt) {
         return std::nullopt;
     }
-    Trivis::LocatePointResult result;
+    double eps2_squared_final = eps2_squared.value_or(_pl_eps2_squared);
+    Trivis::PointLocationResult result;
     result.triangle_id = *tri_id_opt;
     const auto &q_triangle = _mesh.triangles[result.triangle_id];
     for (int node_id: q_triangle.nodes) {
         const auto &node_p = _mesh.point(node_id);
-        if (q.SquaredDistanceTo(node_p) <= epsilon) {
-            result.snap_nodes.push_back(node_id);
+        if (q.SquaredDistanceTo(node_p) <= eps2_squared_final) {
+            result.snap_to_nodes.push_back(node_id);
             if (q == node_p) {
-                int next_node = _mesh.nodes[node_id].next_split_partner;
-                if (next_node != -1) {
+                auto next_node = _mesh.nodes[node_id].next_weakly_intersect_node;
+                if (next_node) {
                     while (next_node != node_id) {
-                        result.snap_nodes.push_back(next_node);
-                        next_node = _mesh.nodes[next_node].next_split_partner;
+                        result.snap_to_nodes.push_back(*next_node);
+                        next_node = _mesh.nodes[*next_node].next_weakly_intersect_node;
                     }
                 }
             }
@@ -146,15 +141,15 @@ std::optional<Trivis::LocatePointResult> Trivis::LocatePoint(
 
 std::optional<Trivis::ObstacleIntersection> Trivis::ComputeObstacleIntersection(
     const geom::FPoint &q,
-    const Trivis::LocatePointResult &q_location,
+    const Trivis::PointLocationResult &q_location,
     int q_triangle_id,
     const geom::FPoint &direction,
     Trivis::Stats *stats
 ) const {
-    if (q_location.snap_nodes.empty()) {
+    if (q_location.snap_to_nodes.empty()) {
         return ComputeObstacleIntersection(q, q_triangle_id, direction, stats);
     } else {
-        for (int node_id: q_location.snap_nodes) {
+        for (int node_id: q_location.snap_to_nodes) {
             auto ret = ComputeObstacleIntersection(node_id, direction, stats);
             if (ret) {
                 return ret;
@@ -200,7 +195,7 @@ std::optional<Trivis::ObstacleIntersection> Trivis::ComputeObstacleIntersection(
         const auto &node_r_p = _mesh.point(node_r_id);
 
         if (IsPointInCone(distant_t, node_l_p, q, node_r_p)) {
-            if (edge.is_obstacle()) {
+            if (edge.is_boundary()) {
                 Trivis::ObstacleIntersection ret;
                 ret.code = RaySegmentIntersection(q, distant_t, node_l_p, node_r_p, ret.p, ret.p2);
                 if (ret.code == '0' || ret.code == 'c' || ret.code == 'e') {
@@ -273,7 +268,7 @@ std::optional<Trivis::ObstacleIntersection> Trivis::ComputeObstacleIntersection(
                 const auto &node_r_p = _mesh.point(node_r_id);
 
                 if (IsPointInCone(distant_t, node_l_p, node_p, node_r_p)) {
-                    if (edge.is_obstacle()) {
+                    if (edge.is_boundary()) {
                         Trivis::ObstacleIntersection ret;
                         ret.code = RaySegmentIntersection(node_p, distant_t, node_l_p, node_r_p, ret.p, ret.p2);
                         if (ret.code == '0' || ret.code == 'c' || ret.code == 'e') {
@@ -308,16 +303,16 @@ std::optional<Trivis::ObstacleIntersection> Trivis::ComputeObstacleIntersection(
 
 std::optional<bool> Trivis::ComputeVisibilityBetween(
     const geom::FPoint &q,
-    const Trivis::LocatePointResult &q_location,
+    const Trivis::PointLocationResult &q_location,
     const geom::FPoint &p,
     std::optional<double> radius,
     Stats *stats
 ) const {
-    if (q_location.snap_nodes.empty()) {
+    if (q_location.snap_to_nodes.empty()) {
         return ComputeVisibilityBetween(q, q_location.triangle_id, p, radius, stats);
     } else {
         bool at_least_one_value = false;
-        for (int node_id: q_location.snap_nodes) {
+        for (int node_id: q_location.snap_to_nodes) {
             auto ret = ComputeVisibilityBetween(node_id, p, radius, stats);
             if (ret.value_or(false)) {
                 return true;
@@ -374,7 +369,7 @@ std::optional<bool> Trivis::ComputeVisibilityBetween(
             if (!TurnsLeft(node_l_p, node_r_p, p)) {
                 // target lies in the same triangle as query
                 return true;
-            } else if (!edge.is_obstacle()) {
+            } else if (!edge.is_boundary()) {
                 return ExpandEdgeVisibilityBetween(1, q, p, node_l_id, node_r_id, edge_id, edge_tri_id == 0 ? 1 : 0, stats);
             }
         }
@@ -434,7 +429,7 @@ std::optional<bool> Trivis::ComputeVisibilityBetween(
                     if (!TurnsLeft(node_l_p, node_r_p, p)) {
                         // target lies in the same triangle as query
                         return true;
-                    } else if (!edge.is_obstacle()) {
+                    } else if (!edge.is_boundary()) {
                         return ExpandEdgeVisibilityBetween(1, node_p, p, node_l_id, node_r_id, edge_id, edge_tri_id == 0 ? 1 : 0, stats);
                     }
                 }
@@ -448,16 +443,16 @@ std::optional<bool> Trivis::ComputeVisibilityBetween(
 
 std::optional<std::vector<int>> Trivis::ComputeVisibleVertices(
     const FPoint &q,
-    const Trivis::LocatePointResult &q_location,
+    const Trivis::PointLocationResult &q_location,
     const std::vector<bool> *tabu_vertices,
     std::optional<double> radius,
     Stats *stats
 ) const {
-    if (q_location.snap_nodes.empty()) {
+    if (q_location.snap_to_nodes.empty()) {
         return ComputeVisibleVertices(q, q_location.triangle_id, nullptr, radius, stats);
     } else {
         std::optional<std::vector<int>> ret;
-        for (int node_id: q_location.snap_nodes) {
+        for (int node_id: q_location.snap_to_nodes) {
             auto ret_opt = ComputeVisibleVertices(node_id, tabu_vertices, radius, stats);
             if (ret_opt) {
                 if (!ret) {
@@ -610,17 +605,17 @@ std::optional<std::vector<int>> Trivis::ComputeVisibleVertices(
 
 std::optional<std::vector<int>> Trivis::ComputeVisiblePoints(
     const geom::FPoint &q,
-    const Trivis::LocatePointResult &q_location,
+    const Trivis::PointLocationResult &q_location,
     const geom::FPoints &points,
-    const std::vector<std::optional<LocatePointResult>> &points_locations,
+    const std::vector<std::optional<PointLocationResult>> &points_locations,
     std::optional<double> radius,
     Stats *stats
 ) const {
-    if (q_location.snap_nodes.empty()) {
+    if (q_location.snap_to_nodes.empty()) {
         return ComputeVisiblePoints(q, q_location.triangle_id, points, points_locations, radius, stats);
     } else {
         std::optional<std::vector<int>> ret;
-        for (int node_id: q_location.snap_nodes) {
+        for (int node_id: q_location.snap_to_nodes) {
             auto ret_opt = ComputeVisiblePoints(node_id, points, points_locations, radius, stats);
             if (ret_opt) {
                 if (!ret) {
@@ -638,7 +633,7 @@ std::optional<std::vector<int>> Trivis::ComputeVisiblePoints(
     const geom::FPoint &q,
     int q_triangle_id,
     const geom::FPoints &points,
-    const std::vector<std::optional<LocatePointResult>> &points_locations,
+    const std::vector<std::optional<PointLocationResult>> &points_locations,
     std::optional<double> radius,
     Stats *stats
 ) const {
@@ -660,7 +655,7 @@ std::optional<std::vector<int>> Trivis::ComputeVisiblePoints(
 std::optional<std::vector<int>> Trivis::ComputeVisiblePoints(
     int node_id,
     const geom::FPoints &points,
-    const std::vector<std::optional<LocatePointResult>> &points_locations,
+    const std::vector<std::optional<PointLocationResult>> &points_locations,
     std::optional<double> radius,
     Stats *stats
 ) const {
@@ -872,7 +867,7 @@ std::optional<std::vector<std::vector<bool>>> Trivis::ComputeVisibilityGraphNode
 
 std::optional<std::vector<std::vector<int>>> Trivis::ComputeVisibilityGraphPointNode(
     const FPoints &points,
-    const std::vector<std::optional<LocatePointResult>> &points_locations,
+    const std::vector<std::optional<PointLocationResult>> &points_locations,
     const std::vector<bool> *tabu_vertices,
     std::optional<double> radius,
     Trivis::Stats *stats
@@ -895,8 +890,8 @@ std::optional<std::vector<std::vector<int>>> Trivis::ComputeVisibilityGraphPoint
             continue;
         }
         std::vector<int> visible_vertices;
-        if (!p_location->snap_nodes.empty()) {
-            for (int node_id: p_location->snap_nodes) {
+        if (!p_location->snap_to_nodes.empty()) {
+            for (int node_id: p_location->snap_to_nodes) {
                 auto visible_vertices_opt = ComputeVisibleVertices(node_id, tabu_vertices, radius, stats);
                 if (!visible_vertices_opt) {
                     continue;
@@ -922,7 +917,7 @@ std::optional<std::vector<std::vector<int>>> Trivis::ComputeVisibilityGraphPoint
 
 std::optional<std::vector<std::vector<bool>>> Trivis::ComputeVisibilityGraphPointNodeBoolMatrix(
     const FPoints &points,
-    const std::vector<std::optional<LocatePointResult>> &points_locations,
+    const std::vector<std::optional<PointLocationResult>> &points_locations,
     const std::vector<bool> *tabu_vertices,
     std::optional<double> radius,
     Trivis::Stats *stats
@@ -945,8 +940,8 @@ std::optional<std::vector<std::vector<bool>>> Trivis::ComputeVisibilityGraphPoin
             continue;
         }
         std::vector<int> visible_vertices;
-        if (!p_location->snap_nodes.empty()) {
-            for (int node_id: p_location->snap_nodes) {
+        if (!p_location->snap_to_nodes.empty()) {
+            for (int node_id: p_location->snap_to_nodes) {
                 auto visible_vertices_opt = ComputeVisibleVertices(node_id, tabu_vertices, radius, stats);
                 if (!visible_vertices_opt) {
                     continue;
@@ -974,7 +969,7 @@ std::optional<std::vector<std::vector<bool>>> Trivis::ComputeVisibilityGraphPoin
 
 std::optional<std::vector<std::vector<int>>> Trivis::ComputeVisibilityGraphPointPoint(
     const FPoints &points,
-    const std::vector<std::optional<LocatePointResult>> &points_locations,
+    const std::vector<std::optional<PointLocationResult>> &points_locations,
     std::optional<double> radius,
     Trivis::Stats *stats
 ) const {
@@ -996,8 +991,8 @@ std::optional<std::vector<std::vector<int>>> Trivis::ComputeVisibilityGraphPoint
             continue;
         }
         std::vector<int> visible_points;
-        if (!p_location->snap_nodes.empty()) {
-            for (int node_id: p_location->snap_nodes) {
+        if (!p_location->snap_to_nodes.empty()) {
+            for (int node_id: p_location->snap_to_nodes) {
                 auto visible_points_opt = ComputeVisiblePoints(node_id, points, points_locations, radius, stats);
                 if (!visible_points_opt) {
                     continue;
@@ -1023,7 +1018,7 @@ std::optional<std::vector<std::vector<int>>> Trivis::ComputeVisibilityGraphPoint
 
 std::optional<std::vector<std::vector<bool>>> Trivis::ComputeVisibilityGraphPointPointBoolMatrix(
     const FPoints &points,
-    const std::vector<std::optional<LocatePointResult>> &points_locations,
+    const std::vector<std::optional<PointLocationResult>> &points_locations,
     std::optional<double> radius,
     Trivis::Stats *stats
 ) const {
@@ -1046,8 +1041,8 @@ std::optional<std::vector<std::vector<bool>>> Trivis::ComputeVisibilityGraphPoin
             continue;
         }
         std::vector<int> visible_points;
-        if (!p_location->snap_nodes.empty()) {
-            for (int node_id: p_location->snap_nodes) {
+        if (!p_location->snap_to_nodes.empty()) {
+            for (int node_id: p_location->snap_to_nodes) {
                 auto visible_points_opt = ComputeVisiblePoints(node_id, points, points_locations, radius, stats);
                 if (!visible_points_opt) {
                     continue;
@@ -1078,15 +1073,15 @@ std::optional<std::vector<std::vector<bool>>> Trivis::ComputeVisibilityGraphPoin
 
 std::optional<AbstractVisibilityRegion> Trivis::ComputeVisibilityRegion(
     const FPoint &q,
-    const Trivis::LocatePointResult &q_location,
+    const Trivis::PointLocationResult &q_location,
     std::optional<double> radius,
     Stats *stats
 ) const {
-    if (q_location.snap_nodes.empty()) {
+    if (q_location.snap_to_nodes.empty()) {
         return ComputeVisibilityRegion(q, q_location.triangle_id, radius, stats);
     } else {
         std::optional<AbstractVisibilityRegion> ret;
-        for (int node_id: q_location.snap_nodes) {
+        for (int node_id: q_location.snap_to_nodes) {
             auto ret_opt = ComputeVisibilityRegion(node_id, radius, stats);
             if (ret_opt) {
                 if (!ret) {
@@ -1238,15 +1233,15 @@ std::optional<AbstractVisibilityRegion> Trivis::ComputeVisibilityRegion(
 
 std::optional<AbstractVisibilityRegion> Trivis::ComputeVisibilityRegionIterative(
     const FPoint &q,
-    const Trivis::LocatePointResult &q_location,
+    const Trivis::PointLocationResult &q_location,
     std::optional<double> radius,
     Stats *stats
 ) const {
-    if (q_location.snap_nodes.empty()) {
+    if (q_location.snap_to_nodes.empty()) {
         return ComputeVisibilityRegionIterative(q, q_location.triangle_id, radius, stats);
     } else {
         std::optional<AbstractVisibilityRegion> ret;
-        for (int node_id: q_location.snap_nodes) {
+        for (int node_id: q_location.snap_to_nodes) {
             auto ret_opt = ComputeVisibilityRegionIterative(node_id, radius, stats);
             if (ret_opt) {
                 if (!ret) {
@@ -1453,16 +1448,16 @@ std::optional<AbstractVisibilityRegion> Trivis::ComputeVisibilityRegionIterative
 
 std::optional<AbstractVisibilityRegion> Trivis::ComputeVisibilityRegionWithHistory(
     const FPoint &q,
-    const Trivis::LocatePointResult &q_location,
+    const Trivis::PointLocationResult &q_location,
     std::vector<HistoryStep> &history,
     std::optional<double> radius,
     Stats *stats
 ) const {
-    if (q_location.snap_nodes.empty()) {
+    if (q_location.snap_to_nodes.empty()) {
         return ComputeVisibilityRegionWithHistory(q, q_location.triangle_id, history, radius, stats);
     } else {
         std::optional<AbstractVisibilityRegion> ret;
-        for (int node_id: q_location.snap_nodes) {
+        for (int node_id: q_location.snap_to_nodes) {
             auto ret_opt = ComputeVisibilityRegionWithHistory(node_id, history, radius, stats);
             if (ret_opt) {
                 if (!ret) {
@@ -1768,7 +1763,7 @@ geom::FPolygon Trivis::ConvertToPolygon(
 
 std::optional<RadialVisibilityRegion> Trivis::ComputeRadialVisibilityRegion(
     const FPoint &q,
-    const Trivis::LocatePointResult &q_location,
+    const Trivis::PointLocationResult &q_location,
     std::optional<double> radius,
     bool intersections_fast_mode,
     bool remove_antennas,
@@ -1825,7 +1820,7 @@ bool Trivis::SaveMesh(
             fs << " " << triangle_id;
         }
         // split partner
-        fs << " " << node.next_split_partner;
+        fs << " " << node.next_weakly_intersect_node.value_or(-1);
         fs << "\n";
     }
     fs << "\n[EDGES]\n";
@@ -1922,7 +1917,11 @@ std::optional<mesh::TriMesh> Trivis::LoadMesh(
                         fs >> t;
                     }
                     // split partner
-                    fs >> node.next_split_partner;
+                    int next_weakly_simple_node;
+                    fs >> next_weakly_simple_node;
+                    if (next_weakly_simple_node != -1) {
+                        node.next_weakly_intersect_node = next_weakly_simple_node;
+                    }
                 }
 
             } else if (token == "[EDGES]") {
@@ -2013,7 +2012,7 @@ Trivis::ObstacleIntersection Trivis::ExpandEdgeObstacleIntersection(
     const auto &edge_l = _mesh.edges[edge_l_id];
     if (IsPointInCone(distant_t, node_l_p, q, opp) && TurnsLeft(q, opp, node_l_p)) {
         // tp is in the left cone.
-        if (edge_l.is_obstacle()) {
+        if (edge_l.is_boundary()) {
             Trivis::ObstacleIntersection ret;
             ret.code = RaySegmentIntersection(q, distant_t, node_l_p, opp, ret.p, ret.p2);
             if (ret.code == '0' || ret.code == 'c' || ret.code == 'e') {
@@ -2035,7 +2034,7 @@ Trivis::ObstacleIntersection Trivis::ExpandEdgeObstacleIntersection(
         // expand left edge
         return ExpandEdgeObstacleIntersection(level + 1, q, distant_t, node_l_id, opp_id, edge_l_id, edge_l.triangles[0] == tri_id ? 1 : 0, stats);
     } else { // tp must be in the right cone.
-        if (edge_r.is_obstacle()) {
+        if (edge_r.is_boundary()) {
             Trivis::ObstacleIntersection ret;
             ret.code = RaySegmentIntersection(q, distant_t, opp, node_r_p, ret.p, ret.p2);
             if (ret.code == '0' || ret.code == 'c' || ret.code == 'e') {
@@ -2095,10 +2094,10 @@ bool Trivis::ExpandEdgeVisibilityBetween(
         if (!TurnsLeft(node_l_p, opp, t)) {
             // tp is in the current triangle.
             return true;
-        } else if (!edge_l.is_obstacle()) {
+        } else if (!edge_l.is_boundary()) {
             // expand left edge
             return ExpandEdgeVisibilityBetween(level + 1, q, t, node_l_id, opp_id, edge_l_id, edge_l.triangles[0] == tri_id ? 1 : 0, stats);
-        } else if (!edge_r.is_obstacle() && IsPointInCone(t, opp, q, node_r_p) && TurnsRight(q, opp, node_r_p)) {
+        } else if (!edge_r.is_boundary() && IsPointInCone(t, opp, q, node_r_p) && TurnsRight(q, opp, node_r_p)) {
             // if the left is obstacle but the right is not and p1 is in both cones, then expand right edge
             return ExpandEdgeVisibilityBetween(level + 1, q, t, opp_id, node_r_id, edge_r_id, edge_r.triangles[0] == tri_id ? 1 : 0, stats);
         } else {
@@ -2108,7 +2107,7 @@ bool Trivis::ExpandEdgeVisibilityBetween(
         if (!TurnsRight(node_r_p, opp, t)) {
             // tp is in the current triangle.
             return true;
-        } else if (!edge_r.is_obstacle()) {
+        } else if (!edge_r.is_boundary()) {
             // expand right edge
             return ExpandEdgeVisibilityBetween(level + 1, q, t, opp_id, node_r_id, edge_r_id, edge_r.triangles[0] == tri_id ? 1 : 0, stats);
         } else {
@@ -2137,7 +2136,7 @@ void Trivis::ExpandEdgeVisibleVertices(
 
     bool too_far_away = sq_radius >= 0.0 && PointSegmentSquaredDistance(q, _mesh.point(curr_edge.nodes[0]), _mesh.point(curr_edge.nodes[1])) > sq_radius;
 
-    if (too_far_away || curr_edge.is_obstacle()) {
+    if (too_far_away || curr_edge.is_boundary()) {
         // Report the edge and return.
 
         // Find out which one of the edge endpoints is 'left' and which one is 'right'.
@@ -2192,7 +2191,7 @@ void Trivis::ExpandEdgeVisibleVertices(
     // index of the other node (not opp) that makes edge_r
     int edge_r_not_opp_id = edge_r.nodes[edge_r.nodes[0] == opp_id ? 1 : 0];
     // true if the edge is obstacle
-    bool edge_r_is_obstacle = edge_r.is_obstacle();
+    bool edge_r_is_obstacle = edge_r.is_boundary();
 
     // index of the edge on left of the current edge
     int edge_l_id = tri.edges[(tri_edge_id + 2) % 3];
@@ -2201,7 +2200,7 @@ void Trivis::ExpandEdgeVisibleVertices(
     // index of the other node (not opp) that makes edge_l
     int edge_l_not_opp_id = edge_l.nodes[edge_l.nodes[0] == opp_id ? 1 : 0];
     // true if the edge is obstacle
-    bool edge_l_is_obstacle = edge_l.is_obstacle();
+    bool edge_l_is_obstacle = edge_l.is_boundary();
 
     // true iff the opp_p satisfies restriction given by the left point
     Orientation o_q_rest_l_opp = Orient(q, rest_l_p, opp_p);
@@ -2258,7 +2257,7 @@ void Trivis::ExpandEdgeVisiblePoints(
 
     bool too_far_away = sq_radius >= 0.0 && PointSegmentSquaredDistance(q, _mesh.point(curr_edge.nodes[0]), _mesh.point(curr_edge.nodes[1])) > sq_radius;
 
-    if (too_far_away || curr_edge.is_obstacle()) {
+    if (too_far_away || curr_edge.is_boundary()) {
         return;
     }
 
@@ -2293,7 +2292,7 @@ void Trivis::ExpandEdgeVisiblePoints(
     // index of the other node (not opp) that makes edge_r
     int edge_r_not_opp_id = edge_r.nodes[edge_r.nodes[0] == opp_id ? 1 : 0];
     // true if the edge is obstacle
-    bool edge_r_is_obstacle = edge_r.is_obstacle();
+    bool edge_r_is_obstacle = edge_r.is_boundary();
 
     // index of the edge on left of the current edge
     int edge_l_id = tri.edges[(tri_edge_id + 2) % 3];
@@ -2302,7 +2301,7 @@ void Trivis::ExpandEdgeVisiblePoints(
     // index of the other node (not opp) that makes edge_l
     int edge_l_not_opp_id = edge_l.nodes[edge_l.nodes[0] == opp_id ? 1 : 0];
     // true if the edge is obstacle
-    bool edge_l_is_obstacle = edge_l.is_obstacle();
+    bool edge_l_is_obstacle = edge_l.is_boundary();
 
     // true iff the opp_p satisfies restriction given by the left point
     Orientation o_q_rest_l_opp = Orient(q, rest_l_p, opp_p);
@@ -2384,7 +2383,7 @@ void Trivis::ExpandEdgeVisibilityRegion(
 
     bool too_far_away = sq_radius >= 0.0 && PointSegmentSquaredDistance(q, _mesh.point(curr_edge.nodes[0]), _mesh.point(curr_edge.nodes[1])) >= sq_radius;
 
-    if (too_far_away || curr_edge.is_obstacle()) {
+    if (too_far_away || curr_edge.is_boundary()) {
         // Report the edge and return.
 
         AbstractVisibilityRegionSegment seg;
@@ -2457,7 +2456,7 @@ void Trivis::ExpandEdgeVisibilityRegion(
     // index of the other node (not opp) that makes edge_r
     int edge_r_not_opp_id = edge_r.nodes[edge_r.nodes[0] == opp_id ? 1 : 0];
     // true if the edge is obstacle
-    bool edge_r_is_obstacle = edge_r.is_obstacle();
+    bool edge_r_is_obstacle = edge_r.is_boundary();
 
     // index of the edge on left of the current edge
     int edge_l_id = tri.edges[(tri_edge_id + 2) % 3];
@@ -2466,7 +2465,7 @@ void Trivis::ExpandEdgeVisibilityRegion(
     // index of the other node (not opp) that makes edge_l
     int edge_l_not_opp_id = edge_l.nodes[edge_l.nodes[0] == opp_id ? 1 : 0];
     // true if the edge is obstacle
-    bool edge_l_is_obstacle = edge_l.is_obstacle();
+    bool edge_l_is_obstacle = edge_l.is_boundary();
 
     // true iff the opp_p satisfies restriction given by the left point
     Orientation o_q_rest_l_opp = Orient(q, rest_l_p, opp_p);
@@ -2519,7 +2518,7 @@ void Trivis::ExpandEdgeVisibilityRegionIterative(
 
     bool too_far_away = sq_radius >= 0.0 && PointSegmentSquaredDistance(q, _mesh.point(curr_edge.nodes[0]), _mesh.point(curr_edge.nodes[1])) >= sq_radius;
 
-    if (too_far_away || curr_edge.is_obstacle()) {
+    if (too_far_away || curr_edge.is_boundary()) {
         // Report the edge and return.
 
         AbstractVisibilityRegionSegment seg;
@@ -2593,7 +2592,7 @@ void Trivis::ExpandEdgeVisibilityRegionIterative(
     // index of the other node (not opp) that makes edge_r
     int edge_r_not_opp_id = edge_r.nodes[edge_r.nodes[0] == opp_id ? 1 : 0];
     // true if the edge is obstacle
-    bool edge_r_is_obstacle = edge_r.is_obstacle();
+    bool edge_r_is_obstacle = edge_r.is_boundary();
 
     // index of the edge on left of the current edge
     int edge_l_id = tri.edges[(tri_edge_id + 2) % 3];
@@ -2602,7 +2601,7 @@ void Trivis::ExpandEdgeVisibilityRegionIterative(
     // index of the other node (not opp) that makes edge_l
     int edge_l_not_opp_id = edge_l.nodes[edge_l.nodes[0] == opp_id ? 1 : 0];
     // true if the edge is obstacle
-    bool edge_l_is_obstacle = edge_l.is_obstacle();
+    bool edge_l_is_obstacle = edge_l.is_boundary();
 
     // true iff the opp_p satisfies restriction given by the left point
     Orientation o_q_rest_l_opp = Orient(q, rest_l_p, opp_p);
@@ -2677,7 +2676,7 @@ void Trivis::ExpandEdgeVisibilityRegionWithHistory(
 
     bool too_far_away = sq_radius >= 0.0 && PointSegmentSquaredDistance(q, _mesh.point(curr_edge.nodes[0]), _mesh.point(curr_edge.nodes[1])) >= sq_radius;
 
-    if (too_far_away || curr_edge.is_obstacle()) {
+    if (too_far_away || curr_edge.is_boundary()) {
         // Report the edge and return.
 
         AbstractVisibilityRegionSegment seg;
@@ -2755,7 +2754,7 @@ void Trivis::ExpandEdgeVisibilityRegionWithHistory(
     // index of the other node (not opp) that makes edge_r
     int edge_r_not_opp_id = edge_r.nodes[edge_r.nodes[0] == opp_id ? 1 : 0];
     // true if the edge is obstacle
-    bool edge_r_is_obstacle = edge_r.is_obstacle();
+    bool edge_r_is_obstacle = edge_r.is_boundary();
 
     // index of the edge on left of the current edge
     int edge_l_id = tri.edges[(tri_edge_id + 2) % 3];
@@ -2764,7 +2763,7 @@ void Trivis::ExpandEdgeVisibilityRegionWithHistory(
     // index of the other node (not opp) that makes edge_l
     int edge_l_not_opp_id = edge_l.nodes[edge_l.nodes[0] == opp_id ? 1 : 0];
     // true if the edge is obstacle
-    bool edge_l_is_obstacle = edge_l.is_obstacle();
+    bool edge_l_is_obstacle = edge_l.is_boundary();
 
     // true iff the opp_p satisfies restriction given by the left point
     Orientation o_q_rest_l_opp = Orient(q, rest_l_p, opp_p);

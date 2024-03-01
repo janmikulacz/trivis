@@ -11,13 +11,14 @@
 #define TRIVIS_MESH_TRI_MESH_H_
 
 #include <array>
+#include <optional>
 
 #include "trivis/geom/geom_types.h"
 
 namespace trivis::mesh {
 
 struct TriNode {
-    int next_split_partner = -1; // invalid
+    std::optional<int> next_weakly_intersect_node = std::nullopt;
     geom::FPoint point;
     std::vector<int> edges;
     std::vector<int> triangles;
@@ -27,7 +28,8 @@ struct TriEdge {
     std::array<int, 2> nodes;
     std::vector<int> triangles;
     std::vector<int> opposites;
-    [[nodiscard]] bool is_obstacle() const { return triangles.size() == 1; }
+
+    [[nodiscard]] bool is_boundary() const { return triangles.size() == 1; }
 };
 
 struct TriTriangle {
@@ -39,6 +41,7 @@ struct TriMesh {
     std::vector<TriNode> nodes;
     std::vector<TriEdge> edges;
     std::vector<TriTriangle> triangles;
+
     [[nodiscard]] const auto &point(int id) const { return nodes[id].point; }
 };
 
@@ -47,10 +50,14 @@ struct TriMesh {
     int tri_id,
     int e_id
 ) {
-    return mesh.triangles[tri_id].nodes[0] + mesh.triangles[tri_id].nodes[1] + mesh.triangles[tri_id].nodes[2] - mesh.edges[e_id].nodes[0] - mesh.edges[e_id].nodes[1];
+    return mesh.triangles[tri_id].nodes[0]
+           + mesh.triangles[tri_id].nodes[1]
+           + mesh.triangles[tri_id].nodes[2]
+           - mesh.edges[e_id].nodes[0]
+           - mesh.edges[e_id].nodes[1];
 }
 
-void SortEdgesInTriangles(TriMesh &mesh);
+void OrderEdgesInTrianglesCCW(TriMesh & mesh);
 
 /**
  * -------------
@@ -78,22 +85,25 @@ void SortEdgesInTriangles(TriMesh &mesh);
  * This function works even when the weak self-intersection node is shared between more than two triangles.
  *
  */
-void SplitWeakSelfIntersectionNodes(TriMesh &mesh);
+void SplitWeaklyIntersectingNodes(TriMesh &mesh);
 
-void SortEdgesAndTrianglesInNodes(TriMesh &mesh);
+void OrderEdgesAndTrianglesInNodesCCW(TriMesh & mesh);
 
-inline void Reorganize(TriMesh &mesh, bool is_strictly_simple = false) {
-    SortEdgesInTriangles(mesh);
+inline void Preorder(
+    TriMesh &mesh,
+    bool is_strictly_simple = false
+) {
+    OrderEdgesInTrianglesCCW(mesh);
     if (!is_strictly_simple) {
-        SplitWeakSelfIntersectionNodes(mesh);
+        SplitWeaklyIntersectingNodes(mesh);
     }
-    SortEdgesAndTrianglesInNodes(mesh);
+    OrderEdgesAndTrianglesInNodesCCW(mesh);
 }
 
 geom::FPolygons Mesh2Polygons(const TriMesh &mesh);
 
 inline bool operator==(const TriNode &n0, const TriNode &n1) {
-    return n0.point == n1.point && n0.edges == n1.edges && n0.triangles == n1.triangles && n0.next_split_partner == n1.next_split_partner;
+    return n0.point == n1.point && n0.edges == n1.edges && n0.triangles == n1.triangles && n0.next_weakly_intersect_node == n1.next_weakly_intersect_node;
 }
 
 inline bool operator!=(const TriNode &n0, const TriNode &n1) {

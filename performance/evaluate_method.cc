@@ -265,8 +265,8 @@ int MainBody(const ProgramOptionVariables &pov) {
 
     trivis::Trivis vis;
     vis.SetMap(map);
-    vis.ConstructMeshConstrainedDelaunayTriangulation();
-    vis.FillBucketing(1.0);
+    vis.ConstructMeshCDT();
+    vis.FillPointLocationBuckets(1.0);
 
     std::ifstream ifs_points(pov.points_full_path);
     if (!ifs_points.is_open()) {
@@ -374,9 +374,9 @@ int MainBody(const ProgramOptionVariables &pov) {
         int node_id = -1;
         bool weakly_simple = false;
         auto query_locate = vis.LocatePoint(query, 0.0);
-        if (query_locate && !query_locate->snap_nodes.empty()) {
-            node_id = query_locate->snap_nodes.front();
-            weakly_simple = query_locate->snap_nodes.size() > 1;
+        if (query_locate && !query_locate->snap_to_nodes.empty()) {
+            node_id = query_locate->snap_to_nodes.front();
+            weakly_simple = query_locate->snap_to_nodes.size() > 1;
         }
         // Load the algorithm data.
         auto algorithm_result = LoadPolygon(query_id, query, ifs_algorithm_data);

@@ -209,8 +209,8 @@ int MainBody(const ProgramOptionVariables &pov) {
     }
 
     clock.Restart();
-    vis.ConstructMeshConstrainedDelaunayTriangulation();
-    vis.FillBucketing(1.0);
+    vis.ConstructMeshCDT();
+    vis.FillPointLocationBuckets(1.0);
     double time_preprocess = clock.TimeInSeconds();
 
     if (!pov.resume_after_crash) {
@@ -246,8 +246,8 @@ int MainBody(const ProgramOptionVariables &pov) {
                 vis_reg = vis.ComputeIntersections(*abstract_vis_reg);
             }
             time_intersections = clock.TimeInSeconds();
-            if (!query_location->snap_nodes.empty()) {
-                snap_point = vis.mesh().point(query_location->snap_nodes.front());
+            if (!query_location->snap_to_nodes.empty()) {
+                snap_point = vis.mesh().point(query_location->snap_to_nodes.front());
             }
         } else {
             time_vis_poly = clock.TimeInSeconds();

@@ -206,9 +206,9 @@ int MainBody(const ProgramOptionVariables &pov) {
         vis.SetMap(std::move(map)); // Set the map to Trivis instance.
         // cannot use map anymore ! (it was moved)
     }
-    vis.ConstructMeshConstrainedDelaunayTriangulation();
-    vis.FillBucketing(pov.bucket_size);
-    //vis.OptimizeBuckets(); // Optional to slightly improve bucketing speed.
+    vis.ConstructMeshCDT();
+    vis.FillPointLocationBuckets(pov.bucket_size);
+    //vis.OptimizePointLocationBucketTriangles(); // Optional to slightly improve bucketing speed.
     LOGF_INF("<< DONE. It took " << clock.TimeInSeconds() << " seconds.");
 
     const auto &lim = vis.limits();
@@ -219,7 +219,7 @@ int MainBody(const ProgramOptionVariables &pov) {
     auto vis_radius_opt = pov.vis_radius > 0.0 ? std::make_optional(pov.vis_radius) : std::nullopt;
     auto q = trivis::geom::MakePoint(pov.x, pov.y);
     LOGF_INF(">> Computing map vertices visible from " << q << ".");
-    std::optional<trivis::Trivis::LocatePointResult> q_location_opt = vis.LocatePoint(q);
+    std::optional<trivis::Trivis::PointLocationResult> q_location_opt = vis.LocatePoint(q);
     if (!q_location_opt) {
         LOGF_FTL("Query point is outside of the map!");
         return EXIT_FAILURE;

@@ -1,11 +1,10 @@
 set(Trivis_SRC
-        bucketing/bucketing.cc
-        bucketing/grid.cc
+        pl/point_location.cc
         geom/intersections.cc
         geom/poly_map.cc
         geom/robust_geometry.cc
         mesh/tri_mesh.cc
-        mesh/constrained_delaunay.cc
+        mesh/cdt.cc
         utils/clipper_geom.cc
         utils/clipper_utils.cc
         utils/random_points.cc

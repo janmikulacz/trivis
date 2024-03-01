@@ -18,7 +18,7 @@ using namespace trivis;
 using namespace trivis::geom;
 using namespace trivis::mesh;
 
-void mesh::SortEdgesInTriangles(TriMesh &mesh) {
+void mesh::OrderEdgesInTrianglesCCW(TriMesh &mesh) {
     const auto &edges = mesh.edges;
     auto &triangles = mesh.triangles;
     auto TurnsRight = [mesh](int i, int j, int k) -> bool {
@@ -42,7 +42,7 @@ void mesh::SortEdgesInTriangles(TriMesh &mesh) {
     }
 }
 
-void mesh::SplitWeakSelfIntersectionNodes(TriMesh &mesh) {
+void mesh::SplitWeaklyIntersectingNodes(TriMesh &mesh) {
     auto &edges = mesh.edges;
     auto &nodes = mesh.nodes;
     auto &triangles = mesh.triangles;
@@ -55,7 +55,7 @@ void mesh::SplitWeakSelfIntersectionNodes(TriMesh &mesh) {
         std::vector<int> obstacle_edges_starts;
         for (int edge_id: node.edges) {
             const auto &edge = edges[edge_id];
-            if (edge.is_obstacle()) {
+            if (edge.is_boundary()) {
                 const auto &e_other_node_p = nodes[edge.nodes[0] == node_id ? edge.nodes[1] : edge.nodes[0]].point;
                 const auto &e_opp_p = nodes[edge.opposites[0]].point;
                 if (!TurnsRight(node_p, e_other_node_p, e_opp_p)) {
@@ -97,7 +97,7 @@ void mesh::SplitWeakSelfIntersectionNodes(TriMesh &mesh) {
                 int next_e_id = curr_tri.edges[(curr_tri_curr_e_idx + 1) % 3];
                 edges[next_e_id].opposites[edges[next_e_id].opposites[0] == node_id ? 0 : 1] = new_node_id;
                 curr_e_id = curr_tri.edges[(curr_tri_curr_e_idx + 2) % 3];
-                if (!edges[curr_e_id].is_obstacle()) {
+                if (!edges[curr_e_id].is_boundary()) {
                     // update current triangle
                     curr_tri_id = edges[curr_e_id].triangles[0] == curr_tri_id ? edges[curr_e_id].triangles[1] : edges[curr_e_id].triangles[0];
                 } else {
@@ -110,12 +110,12 @@ void mesh::SplitWeakSelfIntersectionNodes(TriMesh &mesh) {
         }
         // Save split partners.
         for (int i_prev = static_cast<int>(new_nodes_ids.size()) - 1, i = 0; i < new_nodes_ids.size(); i_prev = i++) {
-            nodes[new_nodes_ids[i_prev]].next_split_partner = new_nodes_ids[i];
+            nodes[new_nodes_ids[i_prev]].next_weakly_intersect_node = new_nodes_ids[i];
         }
     }
 }
 
-void mesh::SortEdgesAndTrianglesInNodes(TriMesh &mesh) {
+void mesh::OrderEdgesAndTrianglesInNodesCCW(TriMesh &mesh) {
     const auto &edges = mesh.edges;
     const auto &triangles = mesh.triangles;
     auto &nodes = mesh.nodes;
@@ -135,7 +135,7 @@ void mesh::SortEdgesAndTrianglesInNodes(TriMesh &mesh) {
         for (int e_idx: node.edges) {
             const auto &edge = edges[e_idx];
             assert(edge.nodes[0] == node_idx || edge.nodes[1] == node_idx);
-            if (edge.is_obstacle()) {
+            if (edge.is_boundary()) {
                 const auto &e_other_node_p = nodes[edge.nodes[0] == node_idx ? edge.nodes[1] : edge.nodes[0]].point;
                 const auto &e_opp_p = nodes[edge.opposites[0]].point;
                 if (!TurnsRight(node_p, e_other_node_p, e_opp_p)) {
@@ -153,7 +153,7 @@ void mesh::SortEdgesAndTrianglesInNodes(TriMesh &mesh) {
             const auto &curr_tri = triangles[curr_tri_idx];
             int curr_tri_curr_e_idx = curr_tri.edges[0] == curr_e_idx ? 0 : (curr_tri.edges[1] == curr_e_idx ? 1 : 2);
             curr_e_idx = curr_tri.edges[(curr_tri_curr_e_idx + 2) % 3];
-            if (!edges[curr_e_idx].is_obstacle()) {
+            if (!edges[curr_e_idx].is_boundary()) {
                 // update current triangle
                 curr_tri_idx = edges[curr_e_idx].triangles[0] == curr_tri_idx ? edges[curr_e_idx].triangles[1] : edges[curr_e_idx].triangles[0];
             } else {

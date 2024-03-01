@@ -207,9 +207,9 @@ int MainBody(const ProgramOptionVariables &pov) {
         vis.SetMap(std::move(map)); // Set the map to TriVis instance.
         // cannot use map anymore ! (it was moved)
     }
-    vis.ConstructMeshConstrainedDelaunayTriangulation();
-    vis.FillBucketing(pov.bucket_size);
-    //vis.OptimizeBuckets(); // Optional to slightly improve bucketing speed.
+    vis.ConstructMeshCDT();
+    vis.FillPointLocationBuckets(pov.bucket_size);
+    //vis.OptimizePointLocationBucketTriangles(); // Optional to slightly improve bucketing speed.
     LOGF_INF("<< DONE. It took " << clock.TimeInSeconds() << " seconds.");
 
     const auto &lim = vis.limits();
@@ -249,7 +249,7 @@ int MainBody(const ProgramOptionVariables &pov) {
     // Compute Visibility Graph: POINT X NODE
     clock.Restart();
     LOGF_INF(">> Computing visibility graph: point x node.");
-    std::vector<std::optional<trivis::Trivis::LocatePointResult>> points_locations;
+    std::vector<std::optional<trivis::Trivis::PointLocationResult>> points_locations;
     points_locations.reserve(points.size());
     for (const auto &p: points) {
         points_locations.push_back(vis.LocatePoint(p));

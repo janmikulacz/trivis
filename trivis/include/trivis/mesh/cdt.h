@@ -1,5 +1,5 @@
 /**
- * File:   constrained_delaunay.h
+ * File:   cdt.h
  *
  * Date:   23.03.2022
  * Author: Jan Mikula
@@ -7,8 +7,8 @@
  *
  */
 
-#ifndef TRIVIS_MESH_CONSTRAINED_DELAUNAY_H_
-#define TRIVIS_MESH_CONSTRAINED_DELAUNAY_H_
+#ifndef TRIVIS_MESH_CDT_H_
+#define TRIVIS_MESH_CDT_H_
 
 #include "trivis/geom/poly_map.h"
 
@@ -16,18 +16,18 @@
 
 namespace trivis::mesh {
 
-void TriangulateMapConstrainedDelaunay(
+void TriangulateMapCDT(
     const geom::PolyMap &map,
     TriMesh &mesh,
     geom::FPolygons &triangles
 );
 
-void TriangulateMapConstrainedDelaunay(
+void TriangulateMapCDT(
     const geom::FPolygons &polygons,
     geom::FPolygons &triangles
 );
 
-void TriangulateMapConstrainedConformingDelaunay(
+void TriangulateMapCCDT(
     const geom::PolyMap &map,
     double max_circumradius,
     geom::FPolygons &triangles
@@ -35,4 +35,4 @@ void TriangulateMapConstrainedConformingDelaunay(
 
 }
 
-#endif //TRIVIS_MESH_CONSTRAINED_DELAUNAY_H_
+#endif //TRIVIS_MESH_CDT_H_
