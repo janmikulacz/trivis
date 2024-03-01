@@ -1,0 +1,117 @@
+357c357
+< #include "triangle.h"
+---
+> #include "triangle/triangle.h"
+796a797
+>   REAL maxcircumradiussq;
+1364c1365
+< int triunsuitable(vertex triorg, vertex tridest, vertex triapex, REAL area)
+---
+> int triunsuitable(vertex triorg, vertex tridest, vertex triapex, REAL area, REAL maxcircumradiussq)
+1366c1367
+< int triunsuitable(triorg, tridest, triapex, area)
+---
+> int triunsuitable(triorg, tridest, triapex, area, maxcircumradiussq)
+1370a1372
+> REAL maxcircumradiussq;                    /* The maximum radius of the circle circumscribing the triangle. */
+1373a1376,1438
+> 
+>     if (maxcircumradiussq > 0.0) {
+> 
+>         int isacute;
+>         REAL dxoa, dxda, dxod;
+>         REAL dyoa, dyda, dyod;
+>         REAL oalensq, dalensq, odlensq;
+>         REAL circumradiussq;
+>         REAL longestlensq;
+> 
+>         dxoa = triorg[0] - triapex[0];
+>         dyoa = triorg[1] - triapex[1];
+>         dxda = tridest[0] - triapex[0];
+>         dyda = tridest[1] - triapex[1];
+>         dxod = triorg[0] - tridest[0];
+>         dyod = triorg[1] - tridest[1];
+>         /* Find the squares of the lengths of the triangle's three edges. */
+>         oalensq = dxoa * dxoa + dyoa * dyoa;
+>         dalensq = dxda * dxda + dyda * dyda;
+>         odlensq = dxod * dxod + dyod * dyod;
+> 
+>         if (oalensq > dalensq) {
+>             // ac is not the longest
+>             if (oalensq > odlensq) {
+>                 // ab is the longest
+>                 longestlensq = oalensq;
+>                 isacute = ((oalensq < dalensq + odlensq) ? 1 : 0);
+>             } else {
+>                 // bc is the longest
+>                 longestlensq = odlensq;
+>                 isacute = ((odlensq < oalensq + dalensq) ? 1 : 0);
+>             }
+>         } else {
+>             // ab is not the longest
+>             if (dalensq > odlensq) {
+>                 // ac is the longest
+>                 longestlensq = dalensq;
+>                 isacute = ((dalensq < oalensq + odlensq) ? 1 : 0);
+>             } else {
+>                 // bc is the longest
+>                 longestlensq = odlensq;
+>                 isacute = ((odlensq < oalensq + dalensq) ? 1 : 0);
+>             }
+>         }
+> 
+>         if (isacute) {
+>             /* Compute the square of the circumradius. */
+>             /* https://artofproblemsolving.com/wiki/index.php/Circumradius */
+>             circumradiussq = (oalensq * dalensq * odlensq) / (16 * area * area);
+>             if (circumradiussq > maxcircumradiussq) {
+>                 return 1;
+>             } else {
+>                 return 0;
+>             }
+>         } else {
+>             if (longestlensq > 4 * maxcircumradiussq) {
+>                 return 1;
+>             } else {
+>                 return 0;
+>             }
+>         }
+>     } else {
+> 
+1397c1462
+<   }
+---
+>   }}
+1417a1483,1485
+> #ifdef NEVER_EXIT
+>   printf("NEVER_EXIT is defined:\n  Triangle would normally exit here with status %d.\n  Instead, this warning is printed and the exit request is ignored.\n\n", status);
+> #else
+1418a1487
+> #endif
+3375a3445,3464
+>       if (argv[i][j] == 'd') {
+>           b->quality = 1;
+>           b->usertest = 1;
+>           if (((argv[i][j + 1] >= '0') && (argv[i][j + 1] <= '9')) || (argv[i][j + 1] == '.')) {
+>               k = 0;
+>               while (((argv[i][j + 1] >= '0') && (argv[i][j + 1] <= '9')) || (argv[i][j + 1] == '.')) {
+>                   j++;
+>                   workstring[k] = argv[i][j];
+>                   k++;
+>               }
+>               workstring[k] = '\0';
+>               b->maxcircumradiussq = (REAL) strtod(workstring, (char **) NULL);
+>               if (b->maxcircumradiussq <= 0.0) {
+>                   printf("Error:  Square of the maximum circumradius must be greater than zero.\n");
+>                   triexit(1);
+>               }
+>           } else {
+>               b->maxcircumradiussq = -1.0;
+>           }
+>       }
+7304c7393
+<       if (triunsuitable(torg, tdest, tapex, area)) {
+---
+>       if (triunsuitable(torg, tdest, tapex, area, b->maxcircumradiussq)) {
+15665d15753
+< 

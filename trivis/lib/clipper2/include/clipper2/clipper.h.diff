@@ -1,0 +1,63 @@
+200,201c200
+<   inline Paths64 ExecuteRectClip(const Rect64& rect, 
+<     const Paths64& paths, bool convex_only)
+---
+>   inline Path64 RectClip(const Rect64& rect, const Path64& path)
+203,205c202,207
+<     if (rect.IsEmpty() || paths.empty()) return Paths64();
+<     RectClip rc(rect);
+<     return rc.Execute(paths, convex_only);
+---
+>     if (rect.IsEmpty() || path.empty()) return Path64();
+>     Rect64 pathRec = GetBounds(path);
+>     if (!rect.Intersects(pathRec)) return Path64();
+>     if (rect.Contains(pathRec)) return path;
+>     class RectClip rc(rect);
+>     return rc.Execute(path);
+207,209c209,210
+< 
+<   inline Paths64 ExecuteRectClip(const Rect64& rect,
+<     const Path64& path, bool convex_only)
+---
+>   
+>   inline Paths64 RectClip(const Rect64& rect, const Paths64& paths)
+211,213c212,242
+<     if (rect.IsEmpty() || path.empty()) return Paths64();
+<     RectClip rc(rect);
+<     return rc.Execute(Paths64{ path }, convex_only);
+---
+>     if (rect.IsEmpty() || paths.empty()) return Paths64();
+>     class RectClip rc(rect);
+>     Paths64 result;
+>     result.reserve(paths.size());
+> 
+>     for (const Path64& p : paths)
+>     {
+>       Rect64 pathRec = GetBounds(p);
+>       if (!rect.Intersects(pathRec)) 
+>         continue;
+>       else if (rect.Contains(pathRec))
+>         result.push_back(p);
+>       else
+>       {
+>         Path64 p2 = rc.Execute(p);
+>         if (!p2.empty()) result.push_back(std::move(p2));
+>       }
+>     }
+>     return result;
+>   }
+> /*
+>   inline PathD RectClip(const RectD& rect, const PathD& path, int precision = 2)
+>   {
+>     if (rect.IsEmpty() || path.empty() ||
+>       !rect.Contains(Bounds(path))) return PathD();
+>     CheckPrecision(precision);
+>     const double scale = std::pow(10, precision);
+>     Rect64 r = ScaleRect<int64_t, double>(rect, scale);
+>     class RectClip rc(r);
+>     Path64 p = ScalePath<int64_t, double>(path, scale);
+>     return ScalePath<double, int64_t>(rc.Execute(p), 1 / scale);
+269c298
+< 
+---
+> */

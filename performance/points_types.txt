@@ -1,0 +1,6 @@
+random_interior
+random
+on_nodes
+edge_mid_points
+close_to_nodes
+close_to_edge_mid_points

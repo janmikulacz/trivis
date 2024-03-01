@@ -1,0 +1,2 @@
+add_library(RobustPredicate INTERFACE)
+target_include_directories(RobustPredicate INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/include)
