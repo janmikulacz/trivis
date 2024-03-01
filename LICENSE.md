@@ -4,7 +4,7 @@
 1. The third-party part, denoted here as *Libraries*, located in the `trivis/lib` and `performance/lib` directories.
 2. The original part, denoted here as *TřiVis-Orig*, which comprises the rest of the software.
 
-**The *Libraries* are licensed under their respective licenses, which can be found in the respective subdirectories of `trivis/lib` and `performance/lib`.**
+**The *Libraries* are licensed under their respective licenses, which can be found in the respective subdirectories of [`trivis/lib`](trivis/lib) and [`performance/lib`](performance/lib).**
 
 ***TřiVis-Orig* is licensed under the following terms:**
 
