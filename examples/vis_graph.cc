@@ -239,7 +239,7 @@ int MainBody(const ProgramOptionVariables &pov) {
     // Compute Visibility Graph: NODE X NODE
     clock.Restart();
     LOGF_INF(">> Computing visibility graph: node x node.");
-    auto vis_graph_bool_node_node_opt = vis.ComputeVisibilityGraphNodeNodeBoolMatrix(nullptr, vis_radius_opt);
+    auto vis_graph_bool_node_node_opt = vis.VertexVertexVisibilityGraphBool(nullptr, vis_radius_opt);
     if (!vis_graph_bool_node_node_opt) {
         LOGF_FTL("Could not be found!");
         return EXIT_FAILURE;
@@ -254,7 +254,7 @@ int MainBody(const ProgramOptionVariables &pov) {
     for (const auto &p: points) {
         points_locations.push_back(vis.LocatePoint(p));
     }
-    auto vis_graph_bool_point_node_opt = vis.ComputeVisibilityGraphPointNodeBoolMatrix(points, points_locations, nullptr, vis_radius_opt);
+    auto vis_graph_bool_point_node_opt = vis.VertexPointVisibilityGraphBool(points, points_locations, nullptr, vis_radius_opt);
     if (!vis_graph_bool_point_node_opt) {
         LOGF_FTL("Could not be found!");
         return EXIT_FAILURE;
@@ -264,7 +264,7 @@ int MainBody(const ProgramOptionVariables &pov) {
     // Compute Visibility Graph: POINT X POINT
     clock.Restart();
     LOGF_INF(">> Computing visibility graph: point x point.");
-    auto vis_graph_bool_point_point_opt = vis.ComputeVisibilityGraphPointPointBoolMatrix(points, points_locations, vis_radius_opt);
+    auto vis_graph_bool_point_point_opt = vis.PointPointVisibilityGraphBool(points, points_locations, vis_radius_opt);
     if (!vis_graph_bool_point_point_opt) {
         LOGF_FTL("Could not be found!");
         return EXIT_FAILURE;

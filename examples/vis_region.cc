@@ -226,7 +226,7 @@ int MainBody(const ProgramOptionVariables &pov) {
         LOGF_FTL("Query point is outside of the map!");
         return EXIT_FAILURE;
     }
-    std::optional<trivis::RadialVisibilityRegion> visibility_region_opt = vis.ComputeRadialVisibilityRegion(q, *q_location_opt, vis_radius_opt);
+    std::optional<trivis::RadialVisibilityRegion> visibility_region_opt = vis.VisibilityRegionWithPostprocessing(q, *q_location_opt, vis_radius_opt);
     if (!visibility_region_opt) {
         LOGF_FTL("Error while computing visibility region!");
         return EXIT_FAILURE;

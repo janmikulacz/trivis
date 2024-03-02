@@ -224,7 +224,7 @@ int MainBody(const ProgramOptionVariables &pov) {
         LOGF_FTL("Query point is outside of the map!");
         return EXIT_FAILURE;
     }
-    std::optional<std::vector<int>> visible_vertices_opt = vis.ComputeVisibleVertices(q, *q_location_opt, nullptr, vis_radius_opt);
+    std::optional<std::vector<int>> visible_vertices_opt = vis.VisibleVertices(q, *q_location_opt, nullptr, vis_radius_opt);
     if (!visible_vertices_opt) {
         LOGF_FTL("Error while computing visibility.");
         return EXIT_FAILURE;

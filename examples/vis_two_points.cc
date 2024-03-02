@@ -234,7 +234,7 @@ int MainBody(const ProgramOptionVariables &pov) {
         LOGF_FTL("Point " << q << " is outside of the map.");
         return EXIT_FAILURE;
     }
-    std::optional<bool> visible_opt = vis.ComputeVisibilityBetween(q, *q_location_opt, p, vis_radius_opt);
+    std::optional<bool> visible_opt = vis.IsVisible(q, *q_location_opt, p, vis_radius_opt);
     if (!visible_opt) {
         LOGF_FTL("Error while computing visibility.");
         return EXIT_FAILURE;

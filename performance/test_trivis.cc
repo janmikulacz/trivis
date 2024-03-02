@@ -239,7 +239,7 @@ int MainBody(const ProgramOptionVariables &pov) {
         std::optional<trivis::RadialVisibilityRegion> vis_reg;
         std::optional<trivis::geom::FPoint> snap_point;
         if (query_location) {
-            abstract_vis_reg = vis.ComputeVisibilityRegion(query, *query_location);
+            abstract_vis_reg = vis.VisibilityRegion(query, *query_location);
             time_vis_poly = clock.TimeInSeconds();
             clock.Restart();
             if (abstract_vis_reg) {

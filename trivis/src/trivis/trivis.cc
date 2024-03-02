@@ -102,19 +102,68 @@ void Trivis::OptimizePointLocationBucketTriangles() {
     _pl.SortTrianglesInBucketsByLargestIntersectionArea(_triangles);
 }
 
+void Trivis::InitPointLocation(
+    std::optional<double> bucket_size,
+    std::optional<double> max_avg_triangle_count_in_bucket,
+    std::optional<bool> optimize_bucket_triangles
+) {
+    assert(_has_mesh);
+    FillPointLocationBuckets(bucket_size, max_avg_triangle_count_in_bucket);
+    if (optimize_bucket_triangles.value_or(ParamDefault::pl_optimize_bucket_triangles)) {
+        OptimizePointLocationBucketTriangles();
+    }
+}
+
+void Trivis::SetPointLocationEpsilons(
+    const std::optional<std::vector<double>> &eps1_seq,
+    std::optional<double> eps2_squared
+) {
+    _pl_eps1_seq = eps1_seq.value_or(std::vector<double>{ParamDefault::pl_eps1.begin(), ParamDefault::pl_eps1.end()});
+    _pl_eps2_squared = eps2_squared.value_or(ParamDefault::pl_eps2_squared);
+}
+
+void Trivis::Init(
+    geom::PolyMap map,
+    std::optional<double> pl_bucket_size,
+    std::optional<double> pl_max_avg_triangle_count_in_bucket,
+    std::optional<bool> pl_optimize_bucket_triangles,
+    const std::optional<std::vector<double>> &pl_eps1_seq,
+    std::optional<double> pl_eps2_squared
+) {
+    SetMap(std::move(map));
+    ConstructMeshCDT();
+    InitPointLocation(pl_bucket_size, pl_max_avg_triangle_count_in_bucket, pl_optimize_bucket_triangles.value_or(ParamDefault::pl_optimize_bucket_triangles));
+    SetPointLocationEpsilons(pl_eps1_seq, pl_eps2_squared);
+}
+
+void Trivis::Init(
+    mesh::TriMesh mesh, std::optional<geom::PolyMap> map,
+    std::optional<double> pl_bucket_size,
+    std::optional<double> pl_max_avg_triangle_count_in_bucket,
+    std::optional<bool> pl_optimize_bucket_triangles,
+    const std::optional<std::vector<double>> &pl_eps1_seq,
+    std::optional<double> pl_eps2_squared
+) {
+    SetMesh(std::move(mesh), std::move(map));
+    InitPointLocation(pl_bucket_size, pl_max_avg_triangle_count_in_bucket, pl_optimize_bucket_triangles.value_or(ParamDefault::pl_optimize_bucket_triangles));
+    SetPointLocationEpsilons(pl_eps1_seq, pl_eps2_squared);
+}
+
 /// ##### LOCATE POINT ##### ///
 
 std::optional<Trivis::PointLocationResult> Trivis::LocatePoint(
     const FPoint &q,
+    const std::optional<std::vector<double>> &eps1_seq,
     const std::optional<double> &eps2_squared
 ) const {
     assert(_has_mesh);
     assert(_has_pl);
-    std::optional<int> tri_id_opt = _pl.FindTriangle(q, _triangles, _pl_eps1_seq);
+    const auto &eps1_seq_final = eps1_seq ? *eps1_seq : _pl_eps1_seq; // choose between given and saved options
+    std::optional<int> tri_id_opt = _pl.FindTriangle(q, _triangles, eps1_seq_final);
     if (!tri_id_opt) {
         return std::nullopt;
     }
-    double eps2_squared_final = eps2_squared.value_or(_pl_eps2_squared);
+    double eps2_squared_final = eps2_squared.value_or(_pl_eps2_squared); // choose between given and saved options
     Trivis::PointLocationResult result;
     result.triangle_id = *tri_id_opt;
     const auto &q_triangle = _mesh.triangles[result.triangle_id];
@@ -139,18 +188,17 @@ std::optional<Trivis::PointLocationResult> Trivis::LocatePoint(
 
 /// ##### VISIBILITY: INTERSECTION OF RAY AND OBSTACLE ##### ///
 
-std::optional<Trivis::ObstacleIntersection> Trivis::ComputeObstacleIntersection(
+std::optional<Trivis::RayShootingResult> Trivis::ShootRay(
     const geom::FPoint &q,
-    const Trivis::PointLocationResult &q_location,
-    int q_triangle_id,
+    const PointLocationResult &q_location,
     const geom::FPoint &direction,
-    Trivis::Stats *stats
+    ExpansionStats *stats
 ) const {
     if (q_location.snap_to_nodes.empty()) {
-        return ComputeObstacleIntersection(q, q_triangle_id, direction, stats);
+        return ShootRay(q, q_location.triangle_id, direction, stats);
     } else {
         for (int node_id: q_location.snap_to_nodes) {
-            auto ret = ComputeObstacleIntersection(node_id, direction, stats);
+            auto ret = ShootRay(node_id, direction, stats);
             if (ret) {
                 return ret;
             }
@@ -159,11 +207,11 @@ std::optional<Trivis::ObstacleIntersection> Trivis::ComputeObstacleIntersection(
     }
 }
 
-std::optional<Trivis::ObstacleIntersection> Trivis::ComputeObstacleIntersection(
+std::optional<Trivis::RayShootingResult> Trivis::ShootRay(
     const geom::FPoint &q,
     int q_triangle_id,
     const geom::FPoint &direction,
-    Stats *stats
+    ExpansionStats *stats
 ) const {
 
     assert(_has_mesh);
@@ -196,7 +244,7 @@ std::optional<Trivis::ObstacleIntersection> Trivis::ComputeObstacleIntersection(
 
         if (IsPointInCone(distant_t, node_l_p, q, node_r_p)) {
             if (edge.is_boundary()) {
-                Trivis::ObstacleIntersection ret;
+                Trivis::RayShootingResult ret;
                 ret.code = RaySegmentIntersection(q, distant_t, node_l_p, node_r_p, ret.p, ret.p2);
                 if (ret.code == '0' || ret.code == 'c' || ret.code == 'e') {
                     return ret;
@@ -220,10 +268,10 @@ std::optional<Trivis::ObstacleIntersection> Trivis::ComputeObstacleIntersection(
     return std::nullopt;
 }
 
-std::optional<Trivis::ObstacleIntersection> Trivis::ComputeObstacleIntersection(
+std::optional<Trivis::RayShootingResult> Trivis::ShootRay(
     int node_id,
     const geom::FPoint &direction,
-    Stats *stats
+    ExpansionStats *stats
 ) const {
 
     assert(_has_mesh);
@@ -269,7 +317,7 @@ std::optional<Trivis::ObstacleIntersection> Trivis::ComputeObstacleIntersection(
 
                 if (IsPointInCone(distant_t, node_l_p, node_p, node_r_p)) {
                     if (edge.is_boundary()) {
-                        Trivis::ObstacleIntersection ret;
+                        Trivis::RayShootingResult ret;
                         ret.code = RaySegmentIntersection(node_p, distant_t, node_l_p, node_r_p, ret.p, ret.p2);
                         if (ret.code == '0' || ret.code == 'c' || ret.code == 'e') {
                             return ret;
@@ -301,19 +349,19 @@ std::optional<Trivis::ObstacleIntersection> Trivis::ComputeObstacleIntersection(
 
 /// ##### VISIBILITY: TWO-POINT QUERIES ##### ///
 
-std::optional<bool> Trivis::ComputeVisibilityBetween(
+std::optional<bool> Trivis::IsVisible(
     const geom::FPoint &q,
-    const Trivis::PointLocationResult &q_location,
+    const PointLocationResult &q_location,
     const geom::FPoint &p,
     std::optional<double> radius,
-    Stats *stats
+    ExpansionStats *stats
 ) const {
     if (q_location.snap_to_nodes.empty()) {
-        return ComputeVisibilityBetween(q, q_location.triangle_id, p, radius, stats);
+        return IsVisible(q, q_location.triangle_id, p, radius, stats);
     } else {
         bool at_least_one_value = false;
         for (int node_id: q_location.snap_to_nodes) {
-            auto ret = ComputeVisibilityBetween(node_id, p, radius, stats);
+            auto ret = IsVisible(node_id, p, radius, stats);
             if (ret.value_or(false)) {
                 return true;
             }
@@ -329,12 +377,12 @@ std::optional<bool> Trivis::ComputeVisibilityBetween(
     }
 }
 
-std::optional<bool> Trivis::ComputeVisibilityBetween(
+std::optional<bool> Trivis::IsVisible(
     const geom::FPoint &q,
     int q_triangle_id,
     const geom::FPoint &p,
     std::optional<double> radius,
-    Stats *stats
+    ExpansionStats *stats
 ) const {
 
     assert(_has_mesh);
@@ -377,11 +425,11 @@ std::optional<bool> Trivis::ComputeVisibilityBetween(
     return std::nullopt;
 }
 
-std::optional<bool> Trivis::ComputeVisibilityBetween(
+std::optional<bool> Trivis::IsVisible(
     int node_id,
     const geom::FPoint &p,
     std::optional<double> radius,
-    Stats *stats
+    ExpansionStats *stats
 ) const {
 
     assert(_has_mesh);
@@ -441,19 +489,19 @@ std::optional<bool> Trivis::ComputeVisibilityBetween(
 
 /// ##### VISIBILITY: MAP VERTICES ##### ///
 
-std::optional<std::vector<int>> Trivis::ComputeVisibleVertices(
-    const FPoint &q,
-    const Trivis::PointLocationResult &q_location,
+std::optional<std::vector<int>> Trivis::VisibleVertices(
+    const geom::FPoint &q,
+    const PointLocationResult &q_location,
     const std::vector<bool> *tabu_vertices,
     std::optional<double> radius,
-    Stats *stats
+    ExpansionStats *stats
 ) const {
     if (q_location.snap_to_nodes.empty()) {
-        return ComputeVisibleVertices(q, q_location.triangle_id, nullptr, radius, stats);
+        return VisibleVertices(q, q_location.triangle_id, nullptr, radius, stats);
     } else {
         std::optional<std::vector<int>> ret;
         for (int node_id: q_location.snap_to_nodes) {
-            auto ret_opt = ComputeVisibleVertices(node_id, tabu_vertices, radius, stats);
+            auto ret_opt = VisibleVertices(node_id, tabu_vertices, radius, stats);
             if (ret_opt) {
                 if (!ret) {
                     ret = std::move(ret_opt);
@@ -466,12 +514,12 @@ std::optional<std::vector<int>> Trivis::ComputeVisibleVertices(
     }
 }
 
-std::optional<std::vector<int>> Trivis::ComputeVisibleVertices(
-    const FPoint &q,
+std::optional<std::vector<int>> Trivis::VisibleVertices(
+    const geom::FPoint &q,
     int q_triangle_id,
     const std::vector<bool> *tabu_vertices,
     std::optional<double> radius,
-    Stats *stats
+    ExpansionStats *stats
 ) const {
 
     assert(_has_mesh);
@@ -510,11 +558,11 @@ std::optional<std::vector<int>> Trivis::ComputeVisibleVertices(
     return ret;
 }
 
-std::optional<std::vector<int>> Trivis::ComputeVisibleVertices(
+std::optional<std::vector<int>> Trivis::VisibleVertices(
     int node_id,
     const std::vector<bool> *tabu_vertices,
     std::optional<double> radius,
-    Stats *stats
+    ExpansionStats *stats
 ) const {
 
     assert(_has_mesh);
@@ -603,20 +651,20 @@ std::optional<std::vector<int>> Trivis::ComputeVisibleVertices(
 
 /// ##### VISIBILITY: INPUT POINTS ##### ///
 
-std::optional<std::vector<int>> Trivis::ComputeVisiblePoints(
+std::optional<std::vector<int>> Trivis::VisiblePoints(
     const geom::FPoint &q,
-    const Trivis::PointLocationResult &q_location,
+    const PointLocationResult &q_location,
     const geom::FPoints &points,
     const std::vector<std::optional<PointLocationResult>> &points_locations,
     std::optional<double> radius,
-    Stats *stats
+    ExpansionStats *stats
 ) const {
     if (q_location.snap_to_nodes.empty()) {
-        return ComputeVisiblePoints(q, q_location.triangle_id, points, points_locations, radius, stats);
+        return VisiblePoints(q, q_location.triangle_id, points, points_locations, radius, stats);
     } else {
         std::optional<std::vector<int>> ret;
         for (int node_id: q_location.snap_to_nodes) {
-            auto ret_opt = ComputeVisiblePoints(node_id, points, points_locations, radius, stats);
+            auto ret_opt = VisiblePoints(node_id, points, points_locations, radius, stats);
             if (ret_opt) {
                 if (!ret) {
                     ret = std::move(ret_opt);
@@ -629,13 +677,13 @@ std::optional<std::vector<int>> Trivis::ComputeVisiblePoints(
     }
 }
 
-std::optional<std::vector<int>> Trivis::ComputeVisiblePoints(
+std::optional<std::vector<int>> Trivis::VisiblePoints(
     const geom::FPoint &q,
     int q_triangle_id,
     const geom::FPoints &points,
     const std::vector<std::optional<PointLocationResult>> &points_locations,
     std::optional<double> radius,
-    Stats *stats
+    ExpansionStats *stats
 ) const {
 
     assert(_has_mesh);
@@ -649,15 +697,15 @@ std::optional<std::vector<int>> Trivis::ComputeVisiblePoints(
         triangle_points[point_location->triangle_id].push_back(point_id);
     }
 
-    return ComputeVisiblePoints(q, q_triangle_id, points, triangle_points, radius, stats);
+    return VisiblePoints(q, q_triangle_id, points, triangle_points, radius, stats);
 }
 
-std::optional<std::vector<int>> Trivis::ComputeVisiblePoints(
+std::optional<std::vector<int>> Trivis::VisiblePoints(
     int node_id,
     const geom::FPoints &points,
     const std::vector<std::optional<PointLocationResult>> &points_locations,
     std::optional<double> radius,
-    Stats *stats
+    ExpansionStats *stats
 ) const {
 
     assert(_has_mesh);
@@ -671,16 +719,16 @@ std::optional<std::vector<int>> Trivis::ComputeVisiblePoints(
         triangle_points[point_location->triangle_id].push_back(point_id);
     }
 
-    return ComputeVisiblePoints(node_id, points, triangle_points, radius, stats);
+    return VisiblePoints(node_id, points, triangle_points, radius, stats);
 }
 
-std::optional<std::vector<int>> Trivis::ComputeVisiblePoints(
+std::optional<std::vector<int>> Trivis::VisiblePoints(
     const geom::FPoint &q,
     int q_triangle_id,
     const geom::FPoints &points,
     const std::vector<std::vector<int>> &triangle_points,
     std::optional<double> radius,
-    Stats *stats
+    ExpansionStats *stats
 ) const {
 
     assert(_has_mesh);
@@ -729,12 +777,12 @@ std::optional<std::vector<int>> Trivis::ComputeVisiblePoints(
     return ret;
 }
 
-std::optional<std::vector<int>> Trivis::ComputeVisiblePoints(
+std::optional<std::vector<int>> Trivis::VisiblePoints(
     int node_id,
     const geom::FPoints &points,
     const std::vector<std::vector<int>> &triangle_points,
     std::optional<double> radius,
-    Stats *stats
+    ExpansionStats *stats
 ) const {
 
     assert(_has_mesh);
@@ -796,10 +844,10 @@ std::optional<std::vector<int>> Trivis::ComputeVisiblePoints(
 
 /// ##### VISIBILITY: VISIBILITY GRAPHS ##### ///
 
-std::optional<std::vector<std::vector<int>>> Trivis::ComputeVisibilityGraphNodeNode(
+std::optional<std::vector<std::vector<int>>> Trivis::VertexVertexVisibilityGraph(
     const std::vector<bool> *tabu_vertices,
     std::optional<double> radius,
-    Stats *stats
+    ExpansionStats *stats
 ) const {
 
     assert(_has_mesh);
@@ -808,15 +856,15 @@ std::optional<std::vector<std::vector<int>>> Trivis::ComputeVisibilityGraphNodeN
         stats->num_expansions = 0;
         stats->max_recursion_depth = 0;
     }
-    Stats stats_temp;
-    Stats *stats_temp_ptr = stats ? &stats_temp : nullptr;
+    ExpansionStats stats_temp;
+    ExpansionStats *stats_temp_ptr = stats ? &stats_temp : nullptr;
 
     std::vector<std::vector<int>> ret(_mesh.nodes.size());
     for (int node_id = 0; node_id < _mesh.nodes.size(); ++node_id) {
         if (tabu_vertices && tabu_vertices->operator[](node_id)) {
             continue;
         }
-        auto visible_vertices_opt = ComputeVisibleVertices(node_id, tabu_vertices, radius, stats_temp_ptr);
+        auto visible_vertices_opt = VisibleVertices(node_id, tabu_vertices, radius, stats_temp_ptr);
         if (!visible_vertices_opt) {
             continue;
         }
@@ -829,10 +877,10 @@ std::optional<std::vector<std::vector<int>>> Trivis::ComputeVisibilityGraphNodeN
     return ret;
 }
 
-std::optional<std::vector<std::vector<bool>>> Trivis::ComputeVisibilityGraphNodeNodeBoolMatrix(
+std::optional<std::vector<std::vector<bool>>> Trivis::VertexVertexVisibilityGraphBool(
     const std::vector<bool> *tabu_vertices,
     std::optional<double> radius,
-    Stats *stats
+    ExpansionStats *stats
 ) const {
 
     assert(_has_mesh);
@@ -841,8 +889,8 @@ std::optional<std::vector<std::vector<bool>>> Trivis::ComputeVisibilityGraphNode
         stats->num_expansions = 0;
         stats->max_recursion_depth = 0;
     }
-    Stats stats_temp;
-    Stats *stats_temp_ptr = stats ? &stats_temp : nullptr;
+    ExpansionStats stats_temp;
+    ExpansionStats *stats_temp_ptr = stats ? &stats_temp : nullptr;
 
     std::vector<std::vector<bool>> ret(_mesh.nodes.size(), std::vector<bool>(_mesh.nodes.size(), false));
     for (int node_id = 0; node_id < _mesh.nodes.size(); ++node_id) {
@@ -850,7 +898,7 @@ std::optional<std::vector<std::vector<bool>>> Trivis::ComputeVisibilityGraphNode
         if (tabu_vertices && tabu_vertices->operator[](node_id)) {
             continue;
         }
-        auto visible_vertices_opt = ComputeVisibleVertices(node_id, tabu_vertices, radius, stats_temp_ptr);
+        auto visible_vertices_opt = VisibleVertices(node_id, tabu_vertices, radius, stats_temp_ptr);
         if (!visible_vertices_opt) {
             continue;
         }
@@ -865,12 +913,12 @@ std::optional<std::vector<std::vector<bool>>> Trivis::ComputeVisibilityGraphNode
     return ret;
 }
 
-std::optional<std::vector<std::vector<int>>> Trivis::ComputeVisibilityGraphPointNode(
-    const FPoints &points,
+std::optional<std::vector<std::vector<int>>> Trivis::VertexPointVisibilityGraph(
+    const geom::FPoints &points,
     const std::vector<std::optional<PointLocationResult>> &points_locations,
     const std::vector<bool> *tabu_vertices,
     std::optional<double> radius,
-    Trivis::Stats *stats
+    ExpansionStats *stats
 ) const {
 
     assert(_has_mesh);
@@ -879,8 +927,8 @@ std::optional<std::vector<std::vector<int>>> Trivis::ComputeVisibilityGraphPoint
         stats->num_expansions = 0;
         stats->max_recursion_depth = 0;
     }
-    Stats stats_temp;
-    Stats *stats_temp_ptr = stats ? &stats_temp : nullptr;
+    ExpansionStats stats_temp;
+    ExpansionStats *stats_temp_ptr = stats ? &stats_temp : nullptr;
 
     std::vector<std::vector<int>> ret(points.size());
     for (int point_id = 0; point_id < points.size(); ++point_id) {
@@ -892,14 +940,14 @@ std::optional<std::vector<std::vector<int>>> Trivis::ComputeVisibilityGraphPoint
         std::vector<int> visible_vertices;
         if (!p_location->snap_to_nodes.empty()) {
             for (int node_id: p_location->snap_to_nodes) {
-                auto visible_vertices_opt = ComputeVisibleVertices(node_id, tabu_vertices, radius, stats);
+                auto visible_vertices_opt = VisibleVertices(node_id, tabu_vertices, radius, stats);
                 if (!visible_vertices_opt) {
                     continue;
                 }
                 visible_vertices.insert(visible_vertices.begin(), visible_vertices_opt->begin(), visible_vertices_opt->end());
             }
         } else {
-            auto visible_vertices_opt = ComputeVisibleVertices(p, p_location->triangle_id, tabu_vertices, radius, stats);
+            auto visible_vertices_opt = VisibleVertices(p, p_location->triangle_id, tabu_vertices, radius, stats);
             if (!visible_vertices_opt) {
                 continue;
             }
@@ -915,12 +963,12 @@ std::optional<std::vector<std::vector<int>>> Trivis::ComputeVisibilityGraphPoint
     return ret;
 }
 
-std::optional<std::vector<std::vector<bool>>> Trivis::ComputeVisibilityGraphPointNodeBoolMatrix(
-    const FPoints &points,
+std::optional<std::vector<std::vector<bool>>> Trivis::VertexPointVisibilityGraphBool(
+    const geom::FPoints &points,
     const std::vector<std::optional<PointLocationResult>> &points_locations,
     const std::vector<bool> *tabu_vertices,
     std::optional<double> radius,
-    Trivis::Stats *stats
+    ExpansionStats *stats
 ) const {
 
     assert(_has_mesh);
@@ -929,8 +977,8 @@ std::optional<std::vector<std::vector<bool>>> Trivis::ComputeVisibilityGraphPoin
         stats->num_expansions = 0;
         stats->max_recursion_depth = 0;
     }
-    Stats stats_temp;
-    Stats *stats_temp_ptr = stats ? &stats_temp : nullptr;
+    ExpansionStats stats_temp;
+    ExpansionStats *stats_temp_ptr = stats ? &stats_temp : nullptr;
 
     std::vector<std::vector<bool>> ret(points.size(), std::vector<bool>(_mesh.nodes.size(), false));
     for (int point_id = 0; point_id < points.size(); ++point_id) {
@@ -942,14 +990,14 @@ std::optional<std::vector<std::vector<bool>>> Trivis::ComputeVisibilityGraphPoin
         std::vector<int> visible_vertices;
         if (!p_location->snap_to_nodes.empty()) {
             for (int node_id: p_location->snap_to_nodes) {
-                auto visible_vertices_opt = ComputeVisibleVertices(node_id, tabu_vertices, radius, stats);
+                auto visible_vertices_opt = VisibleVertices(node_id, tabu_vertices, radius, stats);
                 if (!visible_vertices_opt) {
                     continue;
                 }
                 visible_vertices.insert(visible_vertices.begin(), visible_vertices_opt->begin(), visible_vertices_opt->end());
             }
         } else {
-            auto visible_vertices_opt = ComputeVisibleVertices(p, p_location->triangle_id, tabu_vertices, radius, stats);
+            auto visible_vertices_opt = VisibleVertices(p, p_location->triangle_id, tabu_vertices, radius, stats);
             if (!visible_vertices_opt) {
                 continue;
             }
@@ -967,11 +1015,11 @@ std::optional<std::vector<std::vector<bool>>> Trivis::ComputeVisibilityGraphPoin
     return ret;
 }
 
-std::optional<std::vector<std::vector<int>>> Trivis::ComputeVisibilityGraphPointPoint(
-    const FPoints &points,
+std::optional<std::vector<std::vector<int>>> Trivis::PointPointVisibilityGraph(
+    const geom::FPoints &points,
     const std::vector<std::optional<PointLocationResult>> &points_locations,
     std::optional<double> radius,
-    Trivis::Stats *stats
+    ExpansionStats *stats
 ) const {
 
     assert(_has_mesh);
@@ -980,8 +1028,8 @@ std::optional<std::vector<std::vector<int>>> Trivis::ComputeVisibilityGraphPoint
         stats->num_expansions = 0;
         stats->max_recursion_depth = 0;
     }
-    Stats stats_temp;
-    Stats *stats_temp_ptr = stats ? &stats_temp : nullptr;
+    ExpansionStats stats_temp;
+    ExpansionStats *stats_temp_ptr = stats ? &stats_temp : nullptr;
 
     std::vector<std::vector<int>> ret(points.size());
     for (int point_id = 0; point_id < points.size(); ++point_id) {
@@ -993,14 +1041,14 @@ std::optional<std::vector<std::vector<int>>> Trivis::ComputeVisibilityGraphPoint
         std::vector<int> visible_points;
         if (!p_location->snap_to_nodes.empty()) {
             for (int node_id: p_location->snap_to_nodes) {
-                auto visible_points_opt = ComputeVisiblePoints(node_id, points, points_locations, radius, stats);
+                auto visible_points_opt = VisiblePoints(node_id, points, points_locations, radius, stats);
                 if (!visible_points_opt) {
                     continue;
                 }
                 visible_points.insert(visible_points.begin(), visible_points_opt->begin(), visible_points_opt->end());
             }
         } else {
-            auto visible_points_opt = ComputeVisiblePoints(p, p_location->triangle_id, points, points_locations, radius, stats);
+            auto visible_points_opt = VisiblePoints(p, p_location->triangle_id, points, points_locations, radius, stats);
             if (!visible_points_opt) {
                 continue;
             }
@@ -1016,11 +1064,11 @@ std::optional<std::vector<std::vector<int>>> Trivis::ComputeVisibilityGraphPoint
     return ret;
 }
 
-std::optional<std::vector<std::vector<bool>>> Trivis::ComputeVisibilityGraphPointPointBoolMatrix(
-    const FPoints &points,
+std::optional<std::vector<std::vector<bool>>> Trivis::PointPointVisibilityGraphBool(
+    const geom::FPoints &points,
     const std::vector<std::optional<PointLocationResult>> &points_locations,
     std::optional<double> radius,
-    Trivis::Stats *stats
+    ExpansionStats *stats
 ) const {
 
     assert(_has_mesh);
@@ -1029,8 +1077,8 @@ std::optional<std::vector<std::vector<bool>>> Trivis::ComputeVisibilityGraphPoin
         stats->num_expansions = 0;
         stats->max_recursion_depth = 0;
     }
-    Stats stats_temp;
-    Stats *stats_temp_ptr = stats ? &stats_temp : nullptr;
+    ExpansionStats stats_temp;
+    ExpansionStats *stats_temp_ptr = stats ? &stats_temp : nullptr;
 
     std::vector<std::vector<bool>> ret(points.size(), std::vector<bool>(points.size(), false));
     for (int point_id = 0; point_id < points.size(); ++point_id) {
@@ -1043,14 +1091,14 @@ std::optional<std::vector<std::vector<bool>>> Trivis::ComputeVisibilityGraphPoin
         std::vector<int> visible_points;
         if (!p_location->snap_to_nodes.empty()) {
             for (int node_id: p_location->snap_to_nodes) {
-                auto visible_points_opt = ComputeVisiblePoints(node_id, points, points_locations, radius, stats);
+                auto visible_points_opt = VisiblePoints(node_id, points, points_locations, radius, stats);
                 if (!visible_points_opt) {
                     continue;
                 }
                 visible_points.insert(visible_points.begin(), visible_points_opt->begin(), visible_points_opt->end());
             }
         } else {
-            auto visible_points_opt = ComputeVisiblePoints(p, p_location->triangle_id, points, points_locations, radius, stats);
+            auto visible_points_opt = VisiblePoints(p, p_location->triangle_id, points, points_locations, radius, stats);
             if (!visible_points_opt) {
                 continue;
             }
@@ -1071,18 +1119,18 @@ std::optional<std::vector<std::vector<bool>>> Trivis::ComputeVisibilityGraphPoin
 
 /// ##### VISIBILITY: VISIBILITY REGIONS (ABSTRACT REPRESENTATION) ##### ///
 
-std::optional<AbstractVisibilityRegion> Trivis::ComputeVisibilityRegion(
-    const FPoint &q,
-    const Trivis::PointLocationResult &q_location,
+std::optional<AbstractVisibilityRegion> Trivis::VisibilityRegion(
+    const geom::FPoint &q,
+    const PointLocationResult &q_location,
     std::optional<double> radius,
-    Stats *stats
+    ExpansionStats *stats
 ) const {
     if (q_location.snap_to_nodes.empty()) {
-        return ComputeVisibilityRegion(q, q_location.triangle_id, radius, stats);
+        return VisibilityRegion(q, q_location.triangle_id, radius, stats);
     } else {
         std::optional<AbstractVisibilityRegion> ret;
         for (int node_id: q_location.snap_to_nodes) {
-            auto ret_opt = ComputeVisibilityRegion(node_id, radius, stats);
+            auto ret_opt = VisibilityRegion(node_id, radius, stats);
             if (ret_opt) {
                 if (!ret) {
                     ret = std::move(ret_opt);
@@ -1095,11 +1143,11 @@ std::optional<AbstractVisibilityRegion> Trivis::ComputeVisibilityRegion(
     }
 }
 
-std::optional<AbstractVisibilityRegion> Trivis::ComputeVisibilityRegion(
-    const FPoint &q,
+std::optional<AbstractVisibilityRegion> Trivis::VisibilityRegion(
+    const geom::FPoint &q,
     int q_triangle_id,
     std::optional<double> radius,
-    Stats *stats
+    ExpansionStats *stats
 ) const {
 
     assert(_has_mesh);
@@ -1143,10 +1191,10 @@ std::optional<AbstractVisibilityRegion> Trivis::ComputeVisibilityRegion(
     return ret;
 }
 
-std::optional<AbstractVisibilityRegion> Trivis::ComputeVisibilityRegion(
+std::optional<AbstractVisibilityRegion> Trivis::VisibilityRegion(
     int node_id,
     std::optional<double> radius,
-    Stats *stats
+    ExpansionStats *stats
 ) const {
 
     assert(_has_mesh);
@@ -1231,18 +1279,18 @@ std::optional<AbstractVisibilityRegion> Trivis::ComputeVisibilityRegion(
     return ret;
 }
 
-std::optional<AbstractVisibilityRegion> Trivis::ComputeVisibilityRegionIterative(
-    const FPoint &q,
-    const Trivis::PointLocationResult &q_location,
+std::optional<AbstractVisibilityRegion> Trivis::VisibilityRegionIterative(
+    const geom::FPoint &q,
+    const PointLocationResult &q_location,
     std::optional<double> radius,
-    Stats *stats
+    ExpansionStats *stats
 ) const {
     if (q_location.snap_to_nodes.empty()) {
-        return ComputeVisibilityRegionIterative(q, q_location.triangle_id, radius, stats);
+        return VisibilityRegionIterative(q, q_location.triangle_id, radius, stats);
     } else {
         std::optional<AbstractVisibilityRegion> ret;
         for (int node_id: q_location.snap_to_nodes) {
-            auto ret_opt = ComputeVisibilityRegionIterative(node_id, radius, stats);
+            auto ret_opt = VisibilityRegionIterative(node_id, radius, stats);
             if (ret_opt) {
                 if (!ret) {
                     ret = std::move(ret_opt);
@@ -1255,11 +1303,11 @@ std::optional<AbstractVisibilityRegion> Trivis::ComputeVisibilityRegionIterative
     }
 }
 
-std::optional<AbstractVisibilityRegion> Trivis::ComputeVisibilityRegionIterative(
-    const FPoint &q,
+std::optional<AbstractVisibilityRegion> Trivis::VisibilityRegionIterative(
+    const geom::FPoint &q,
     int q_triangle_id,
     std::optional<double> radius,
-    Stats *stats
+    ExpansionStats *stats
 ) const {
 
     assert(_has_mesh);
@@ -1342,10 +1390,10 @@ std::optional<AbstractVisibilityRegion> Trivis::ComputeVisibilityRegionIterative
     return ret;
 }
 
-std::optional<AbstractVisibilityRegion> Trivis::ComputeVisibilityRegionIterative(
+std::optional<AbstractVisibilityRegion> Trivis::VisibilityRegionIterative(
     int node_id,
     std::optional<double> radius,
-    Stats *stats
+    ExpansionStats *stats
 ) const {
 
     assert(_has_mesh);
@@ -1446,19 +1494,19 @@ std::optional<AbstractVisibilityRegion> Trivis::ComputeVisibilityRegionIterative
     return ret;
 }
 
-std::optional<AbstractVisibilityRegion> Trivis::ComputeVisibilityRegionWithHistory(
-    const FPoint &q,
-    const Trivis::PointLocationResult &q_location,
-    std::vector<HistoryStep> &history,
+std::optional<AbstractVisibilityRegion> Trivis::VisibilityRegionWithHistory(
+    const geom::FPoint &q,
+    const PointLocationResult &q_location,
+    std::vector<ExpansionHistoryStep> &history,
     std::optional<double> radius,
-    Stats *stats
+    ExpansionStats *stats
 ) const {
     if (q_location.snap_to_nodes.empty()) {
-        return ComputeVisibilityRegionWithHistory(q, q_location.triangle_id, history, radius, stats);
+        return VisibilityRegionWithHistory(q, q_location.triangle_id, history, radius, stats);
     } else {
         std::optional<AbstractVisibilityRegion> ret;
         for (int node_id: q_location.snap_to_nodes) {
-            auto ret_opt = ComputeVisibilityRegionWithHistory(node_id, history, radius, stats);
+            auto ret_opt = VisibilityRegionWithHistory(node_id, history, radius, stats);
             if (ret_opt) {
                 if (!ret) {
                     ret = std::move(ret_opt);
@@ -1471,12 +1519,12 @@ std::optional<AbstractVisibilityRegion> Trivis::ComputeVisibilityRegionWithHisto
     }
 }
 
-std::optional<AbstractVisibilityRegion> Trivis::ComputeVisibilityRegionWithHistory(
-    const FPoint &q,
+std::optional<AbstractVisibilityRegion> Trivis::VisibilityRegionWithHistory(
+    const geom::FPoint &q,
     int q_triangle_id,
-    std::vector<HistoryStep> &history,
+    std::vector<ExpansionHistoryStep> &history,
     std::optional<double> radius,
-    Stats *stats
+    ExpansionStats *stats
 ) const {
 
     assert(_has_mesh);
@@ -1519,11 +1567,11 @@ std::optional<AbstractVisibilityRegion> Trivis::ComputeVisibilityRegionWithHisto
     return ret;
 }
 
-std::optional<AbstractVisibilityRegion> Trivis::ComputeVisibilityRegionWithHistory(
+std::optional<AbstractVisibilityRegion> Trivis::VisibilityRegionWithHistory(
     int node_id,
-    std::vector<HistoryStep> &history,
+    std::vector<ExpansionHistoryStep> &history,
     std::optional<double> radius,
-    Stats *stats
+    ExpansionStats *stats
 ) const {
 
     assert(_has_mesh);
@@ -1612,7 +1660,7 @@ std::optional<AbstractVisibilityRegion> Trivis::ComputeVisibilityRegionWithHisto
 
 RadialVisibilityRegion Trivis::ComputeIntersections(
     const AbstractVisibilityRegion &abstract,
-    bool fast_mode
+    bool line_line_mode
 ) const {
     assert(_has_mesh);
     RadialVisibilityRegion ret;
@@ -1624,10 +1672,10 @@ RadialVisibilityRegion Trivis::ComputeIntersections(
         AbstractVisibilityRegionSegment seg = abstract.segments[i];
         if (seg_prev.v2.is_intersection || seg_prev.v2.id != seg.v1.id) {
             // Append v1.
-            AppendNotCollinearWithIntersection(abstract.seed, seg.v1, -1, false, fast_mode, ret);
+            AppendNotCollinearWithIntersection(abstract.seed, seg.v1, -1, false, line_line_mode, ret);
         }
         // Append v2.
-        AppendNotCollinearWithIntersection(abstract.seed, seg.v2, seg.id, i == n_minus_1, fast_mode, ret);
+        AppendNotCollinearWithIntersection(abstract.seed, seg.v2, seg.id, i == n_minus_1, line_line_mode, ret);
     }
     return ret;
 }
@@ -1741,10 +1789,34 @@ void Trivis::RemoveShortEdges(
 
 RadialVisibilityRegion Trivis::SampleArcEdges(
     const RadialVisibilityRegion &visibility_region,
-    double max_sample_beta
+    double max_angle
 ) {
     assert(IsValid(visibility_region));
-    return SampleArcEdges(visibility_region, max_sample_beta);
+    return SampleArcEdges(visibility_region, max_angle);
+}
+
+RadialVisibilityRegion Trivis::Postprocess(
+    const AbstractVisibilityRegion &abstract,
+    bool line_line_mode_intersections,
+    bool remove_antennas,
+    std::optional<double> radius,
+    std::optional<double> min_edge_length,
+    std::optional<double> sampling_max_angle
+) const {
+    auto ret = ComputeIntersections(abstract, line_line_mode_intersections);
+    if (remove_antennas) {
+        RemoveAntennas(ret);
+    }
+    if (radius) {
+        ret = IntersectWithCircle(*radius, ret);
+    }
+    if (min_edge_length) {
+        RemoveShortEdges(*min_edge_length, ret);
+    }
+    if (sampling_max_angle) {
+        ret = SampleArcEdges(ret, *sampling_max_angle);
+    }
+    return ret;
 }
 
 geom::FPolygon Trivis::ConvertToPolygon(
@@ -1761,30 +1833,54 @@ geom::FPolygon Trivis::ConvertToPolygon(
 
 /// ##### SHORTCUTS: VISIBILITY REGIONS + POSTPROCESSING ##### ///
 
-std::optional<RadialVisibilityRegion> Trivis::ComputeRadialVisibilityRegion(
-    const FPoint &q,
-    const Trivis::PointLocationResult &q_location,
+std::optional<RadialVisibilityRegion> Trivis::VisibilityRegionWithPostprocessing(
+    const geom::FPoint &q,
+    const PointLocationResult &q_location,
     std::optional<double> radius,
-    bool intersections_fast_mode,
+    bool line_line_mode_intersections,
     bool remove_antennas,
     std::optional<double> min_edge_length,
-    Stats *stats
+    std::optional<double> sampling_max_angle,
+    ExpansionStats *stats
 ) const {
-    auto abstract_opt = ComputeVisibilityRegion(q, q_location, radius, stats);
+    auto abstract_opt = VisibilityRegion(q, q_location, radius, stats);
     if (!abstract_opt) {
         return std::nullopt;
     }
-    auto ret = ComputeIntersections(*abstract_opt, intersections_fast_mode);
-    if (remove_antennas) {
-        RemoveAntennas(ret);
+    return Postprocess(*abstract_opt, line_line_mode_intersections, remove_antennas, radius, min_edge_length, sampling_max_angle);
+}
+
+std::optional<RadialVisibilityRegion> Trivis::VisibilityRegionWithPostprocessing(
+    const geom::FPoint &q,
+    int q_triangle_id,
+    std::optional<double> radius,
+    bool line_line_mode_intersections,
+    bool remove_antennas,
+    std::optional<double> min_edge_length,
+    std::optional<double> sampling_max_angle,
+    ExpansionStats *stats
+) const {
+    auto abstract_opt = VisibilityRegion(q, q_triangle_id, radius, stats);
+    if (!abstract_opt) {
+        return std::nullopt;
     }
-    if (radius) {
-        ret = IntersectWithCircle(*radius, ret);
+    return Postprocess(*abstract_opt, line_line_mode_intersections, remove_antennas, radius, min_edge_length, sampling_max_angle);
+}
+
+std::optional<RadialVisibilityRegion> Trivis::VisibilityRegionWithPostprocessing(
+    int node_id,
+    std::optional<double> radius,
+    bool line_line_mode_intersections,
+    bool remove_antennas,
+    std::optional<double> min_edge_length,
+    std::optional<double> sampling_max_angle,
+    ExpansionStats *stats
+) const {
+    auto abstract_opt = VisibilityRegion(node_id, radius, stats);
+    if (!abstract_opt) {
+        return std::nullopt;
     }
-    if (min_edge_length) {
-        RemoveShortEdges(*min_edge_length, ret);
-    }
-    return ret;
+    return Postprocess(*abstract_opt, line_line_mode_intersections, remove_antennas, radius, min_edge_length, sampling_max_angle);
 }
 
 /// ##### GENERAL UTILITIES ##### ///
@@ -1981,7 +2077,7 @@ std::optional<mesh::TriMesh> Trivis::LoadMesh(
 
 /// ##### EXPAND EDGE: INTERSECTION OF RAY AND OBSTACLE ##### ///
 
-Trivis::ObstacleIntersection Trivis::ExpandEdgeObstacleIntersection(
+Trivis::RayShootingResult Trivis::ExpandEdgeObstacleIntersection(
     int level,
     const geom::FPoint &q,
     const geom::FPoint &distant_t,
@@ -1989,7 +2085,7 @@ Trivis::ObstacleIntersection Trivis::ExpandEdgeObstacleIntersection(
     int node_r_id,
     int curr_edge_id,
     int curr_edge_tri_id,
-    Stats *stats
+    ExpansionStats *stats
 ) const {
 
     if (stats) {
@@ -2013,7 +2109,7 @@ Trivis::ObstacleIntersection Trivis::ExpandEdgeObstacleIntersection(
     if (IsPointInCone(distant_t, node_l_p, q, opp) && TurnsLeft(q, opp, node_l_p)) {
         // tp is in the left cone.
         if (edge_l.is_boundary()) {
-            Trivis::ObstacleIntersection ret;
+            Trivis::RayShootingResult ret;
             ret.code = RaySegmentIntersection(q, distant_t, node_l_p, opp, ret.p, ret.p2);
             if (ret.code == '0' || ret.code == 'c' || ret.code == 'e') {
                 return ret;
@@ -2035,7 +2131,7 @@ Trivis::ObstacleIntersection Trivis::ExpandEdgeObstacleIntersection(
         return ExpandEdgeObstacleIntersection(level + 1, q, distant_t, node_l_id, opp_id, edge_l_id, edge_l.triangles[0] == tri_id ? 1 : 0, stats);
     } else { // tp must be in the right cone.
         if (edge_r.is_boundary()) {
-            Trivis::ObstacleIntersection ret;
+            Trivis::RayShootingResult ret;
             ret.code = RaySegmentIntersection(q, distant_t, opp, node_r_p, ret.p, ret.p2);
             if (ret.code == '0' || ret.code == 'c' || ret.code == 'e') {
                 return ret;
@@ -2068,7 +2164,7 @@ bool Trivis::ExpandEdgeVisibilityBetween(
     int node_r_id,
     int curr_edge_id,
     int curr_edge_tri_id,
-    Stats *stats
+    ExpansionStats *stats
 ) const {
 
     if (stats) {
@@ -2128,7 +2224,7 @@ void Trivis::ExpandEdgeVisibleVertices(
     double sq_radius,
     std::vector<int> &visible_vertices,
     const std::vector<bool> *tabu_vertices,
-    Stats *stats
+    ExpansionStats *stats
 ) const {
 
     // current edge (struct)
@@ -2250,7 +2346,7 @@ void Trivis::ExpandEdgeVisiblePoints(
     double sq_radius,
     std::vector<bool> &point_visited,
     std::vector<int> &visible_points,
-    Stats *stats
+    ExpansionStats *stats
 ) const {
     // current edge (struct)
     const auto &curr_edge = _mesh.edges[curr_edge_id];
@@ -2375,7 +2471,7 @@ void Trivis::ExpandEdgeVisibilityRegion(
     int curr_edge_tri_id,
     double sq_radius,
     AbstractVisibilityRegion &visibility_region,
-    Stats *stats
+    ExpansionStats *stats
 ) const {
 
     // current edge (struct)
@@ -2510,7 +2606,7 @@ void Trivis::ExpandEdgeVisibilityRegionIterative(
     EdgeExpansionInfo &expansion1,
     bool &has_expansion2,
     EdgeExpansionInfo &expansion2,
-    Stats *stats
+    ExpansionStats *stats
 ) const {
 
     // current edge (struct)
@@ -2662,14 +2758,14 @@ void Trivis::ExpandEdgeVisibilityRegionWithHistory(
     int curr_edge_tri_id,
     double sq_radius,
     AbstractVisibilityRegion &visibility_region,
-    std::vector<HistoryStep> &history,
-    Stats *stats
+    std::vector<ExpansionHistoryStep> &history,
+    ExpansionStats *stats
 ) const {
 
     // current edge (struct)
     const auto &curr_edge = _mesh.edges[curr_edge_id];
 
-    HistoryStep history_step;
+    ExpansionHistoryStep history_step;
     history_step.edge_id = curr_edge_id;
     history_step.rest_l_id = rest_l_id;
     history_step.rest_r_id = rest_r_id;
@@ -2714,7 +2810,7 @@ void Trivis::ExpandEdgeVisibilityRegionWithHistory(
             seg.v2.id_d = v_r_id;
         }
 
-        history_step.res_seg_id = static_cast<int>(visibility_region.segments.size());
+        history_step.output_segment_id = static_cast<int>(visibility_region.segments.size());
         history.push_back(history_step);
         visibility_region.segments.push_back(seg);
         return;
@@ -2806,7 +2902,7 @@ void Trivis::AppendNotCollinearWithIntersection(
     const AbstractVisibilityRegionVertex &v,
     int edge_flag,
     bool is_last,
-    bool fast_mode,
+    bool line_line_mode,
     RadialVisibilityRegion &visibility_region
 ) const {
     int vertex_flag;
@@ -2818,11 +2914,11 @@ void Trivis::AppendNotCollinearWithIntersection(
         const auto &c = _mesh.point(v.id_c);
         const auto &d = _mesh.point(v.id_d);
         bool intersection_not_found = false;
-        if (fast_mode) {
+        if (line_line_mode) {
             // LineLineIntersectionNotCollinear is faster (but less safe) than RaySegmentIntersection
             intersection_not_found = !LineLineIntersectionNotCollinear(q, b, c, d, p);
         }
-        if (!fast_mode || intersection_not_found) {
+        if (!line_line_mode || intersection_not_found) {
             char code = RaySegmentIntersection(q, b, c, d, p, aux);
             intersection_not_found = !(code == '1' || code == 'i' || code == 'v' || code == 's' || code == 'V');
             if (intersection_not_found) {
