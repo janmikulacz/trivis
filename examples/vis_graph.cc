@@ -240,10 +240,6 @@ int MainBody(const ProgramOptionVariables &pov) {
     clock.Restart();
     LOGF_INF(">> Computing visibility graph: node x node.");
     auto vis_graph_bool_node_node_opt = vis.VertexVertexVisibilityGraphBool(nullptr, vis_radius_opt);
-    if (!vis_graph_bool_node_node_opt) {
-        LOGF_FTL("Could not be found!");
-        return EXIT_FAILURE;
-    }
     LOGF_INF("<< DONE. It took " << clock.TimeInSeconds() << " seconds.");
 
     // Compute Visibility Graph: POINT X NODE
@@ -255,20 +251,12 @@ int MainBody(const ProgramOptionVariables &pov) {
         points_locations.push_back(vis.LocatePoint(p));
     }
     auto vis_graph_bool_point_node_opt = vis.VertexPointVisibilityGraphBool(points, points_locations, nullptr, vis_radius_opt);
-    if (!vis_graph_bool_point_node_opt) {
-        LOGF_FTL("Could not be found!");
-        return EXIT_FAILURE;
-    }
     LOGF_INF("<< DONE. It took " << clock.TimeInSeconds() << " seconds.");
 
     // Compute Visibility Graph: POINT X POINT
     clock.Restart();
     LOGF_INF(">> Computing visibility graph: point x point.");
     auto vis_graph_bool_point_point_opt = vis.PointPointVisibilityGraphBool(points, points_locations, vis_radius_opt);
-    if (!vis_graph_bool_point_point_opt) {
-        LOGF_FTL("Could not be found!");
-        return EXIT_FAILURE;
-    }
     LOGF_INF("<< DONE. It took " << clock.TimeInSeconds() << " seconds.");
 
     // Draw the result.
@@ -287,21 +275,21 @@ int MainBody(const ProgramOptionVariables &pov) {
     dr::FancyDrawMap(drawer, vis);
     for (int node_id1 = 0; node_id1 < n_nodes; ++node_id1) {
         for (int node_id2 = node_id1 + 1; node_id2 < n_nodes; ++node_id2) {
-            if ((*vis_graph_bool_node_node_opt)[node_id1][node_id2]) {
+            if ((vis_graph_bool_node_node_opt)[node_id1][node_id2]) {
                 drawer.DrawLine(node_points[node_id1], node_points[node_id2], 0.05, dr::kColorRed);
             }
         }
     }
     for (int point_id = 0; point_id < n_points; ++point_id) {
         for (int node_id = 0; node_id < n_nodes; ++node_id) {
-            if ((*vis_graph_bool_point_node_opt)[point_id][node_id]) {
+            if ((vis_graph_bool_point_node_opt)[point_id][node_id]) {
                 drawer.DrawLine(points[point_id], node_points[node_id], 0.05, dr::kColorLime);
             }
         }
     }
     for (int point_id1 = 0; point_id1 < n_points; ++point_id1) {
         for (int point_id2 = point_id1 + 1; point_id2 < n_points; ++point_id2) {
-            if ((*vis_graph_bool_point_point_opt)[point_id1][point_id2]) {
+            if ((vis_graph_bool_point_point_opt)[point_id1][point_id2]) {
                 drawer.DrawLine(points[point_id1], points[point_id2], 0.05, dr::kColorBlue);
             }
         }
