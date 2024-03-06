@@ -24,15 +24,15 @@ void drawing::FancyDrawMap(
     drawer.DrawBorders(kColorWhite);
     drawer.DrawHoles(kColorDimGray);
     drawer.DrawPolygons(vis.triangles(), 0.01, kColorYellow);
-    for (int i = 0; i < vis.mesh().nodes.size(); ++i) {
+    for (int i = 0; i < vis.mesh().vertices.size(); ++i) {
         drawer.DrawText(std::to_string(i), vis.mesh().point(i), 0.03, kColorNavy);
     }
     for (int i = 0; i < vis.mesh().edges.size(); ++i) {
-        drawer.DrawText(std::to_string(i), (vis.mesh().point(vis.mesh().edges[i].nodes[0]) + vis.mesh().point(vis.mesh().edges[i].nodes[1])) / 2.0, 0.03, kColorMaroon);
+        drawer.DrawText(std::to_string(i), (vis.mesh().point(vis.mesh().edges[i].vertices[0]) + vis.mesh().point(vis.mesh().edges[i].vertices[1])) / 2.0, 0.03, kColorMaroon);
     }
     for (int i = 0; i < vis.mesh().triangles.size(); ++i) {
         const auto &tri = vis.mesh().triangles[i];
-        drawer.DrawText(std::to_string(i), (vis.mesh().point(tri.nodes[0]) + vis.mesh().point(tri.nodes[1]) + vis.mesh().point(tri.nodes[2])) / 3.0, 0.03, kColorDeepPink);
+        drawer.DrawText(std::to_string(i), (vis.mesh().point(tri.vertices[0]) + vis.mesh().point(tri.vertices[1]) + vis.mesh().point(tri.vertices[2])) / 3.0, 0.03, kColorDeepPink);
     }
 }
 

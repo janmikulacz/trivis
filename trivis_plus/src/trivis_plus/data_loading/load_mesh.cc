@@ -30,12 +30,12 @@ bool trivis_plus::data_loading::LoadTriMesh(
         if (token == "[NODES]") {
             int n_nodes;
             ifs >> n_nodes;
-            mesh.nodes.resize(n_nodes);
+            mesh.vertices.resize(n_nodes);
             for (int i = 0; i < n_nodes; ++i) {
                 int node_id, point_id;
                 ifs >> node_id;
                 ifs >> point_id;
-                auto &node = mesh.nodes[node_id];
+                auto &node = mesh.vertices[node_id];
                 node.point = points[point_id];
                 int n_edges;
                 ifs >> n_edges;
@@ -64,8 +64,8 @@ bool trivis_plus::data_loading::LoadTriMesh(
                 int edge_id;
                 ifs >> edge_id;
                 auto &edge = mesh.edges[edge_id];
-                ifs >> edge.nodes[0];
-                ifs >> edge.nodes[1];
+                ifs >> edge.vertices[0];
+                ifs >> edge.vertices[1];
                 int n_triangles;
                 ifs >> n_triangles;
                 edge.triangles.resize(n_triangles);
@@ -91,9 +91,9 @@ bool trivis_plus::data_loading::LoadTriMesh(
                 int triangle_id;
                 ifs >> triangle_id;
                 auto &triangle = mesh.triangles[triangle_id];
-                ifs >> triangle.nodes[0];
-                ifs >> triangle.nodes[1];
-                ifs >> triangle.nodes[2];
+                ifs >> triangle.vertices[0];
+                ifs >> triangle.vertices[1];
+                ifs >> triangle.vertices[2];
                 ifs >> triangle.edges[0];
                 ifs >> triangle.edges[1];
                 ifs >> triangle.edges[2];

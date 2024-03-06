@@ -17,15 +17,15 @@
 
 namespace trivis::mesh {
 
-struct TriNode {
-    std::optional<int> next_weakly_intersect_node = std::nullopt;
+struct TriVertex {
+    std::optional<int> next_wi_vertex = std::nullopt;
     geom::FPoint point;
     std::vector<int> edges;
     std::vector<int> triangles;
 };
 
 struct TriEdge {
-    std::array<int, 2> nodes;
+    std::array<int, 2> vertices;
     std::vector<int> triangles;
     std::vector<int> opposites;
 
@@ -34,30 +34,30 @@ struct TriEdge {
 
 struct TriTriangle {
     std::array<int, 3> edges;
-    std::array<int, 3> nodes;
+    std::array<int, 3> vertices;
 };
 
 struct TriMesh {
-    std::vector<TriNode> nodes;
+    std::vector<TriVertex> vertices;
     std::vector<TriEdge> edges;
     std::vector<TriTriangle> triangles;
 
-    [[nodiscard]] const auto &point(int id) const { return nodes[id].point; }
+    [[nodiscard]] const auto &point(int id) const { return vertices[id].point; }
 };
 
-[[nodiscard]] inline int OppositeNode(
+[[nodiscard]] inline int OppositeVertex(
     const TriMesh &mesh,
     int tri_id,
-    int e_id
+    int edge_id
 ) {
-    return mesh.triangles[tri_id].nodes[0]
-           + mesh.triangles[tri_id].nodes[1]
-           + mesh.triangles[tri_id].nodes[2]
-           - mesh.edges[e_id].nodes[0]
-           - mesh.edges[e_id].nodes[1];
+    return mesh.triangles[tri_id].vertices[0]
+           + mesh.triangles[tri_id].vertices[1]
+           + mesh.triangles[tri_id].vertices[2]
+           - mesh.edges[edge_id].vertices[0]
+           - mesh.edges[edge_id].vertices[1];
 }
 
-void OrderEdgesInTrianglesCCW(TriMesh & mesh);
+void OrderEdgesInTrianglesCCW(TriMesh &mesh);
 
 /**
  * -------------
@@ -79,7 +79,7 @@ void OrderEdgesInTrianglesCCW(TriMesh & mesh);
  *
  * In theory, looking from T1 to T2 through X should create a 1-dimensional antenna.
  * However, this is usually undesired, and TriVis is not designed to handle these cases properly.
- * Therefore, this function finds all weak self-intersection nodes in the mesh and splits them into X1 and X2.
+ * Therefore, this function finds all weak self-intersection vertices in the mesh and splits them into X1 and X2.
  * X1 belongs to T1, and X2 belongs to T2.
  * Although X1 and X2 have the same coordinates, they are not visible to each other.
  * This function works even when the weak self-intersection node is shared between more than two triangles.
@@ -102,16 +102,16 @@ inline void Preorder(
 
 geom::FPolygons Mesh2Polygons(const TriMesh &mesh);
 
-inline bool operator==(const TriNode &n0, const TriNode &n1) {
-    return n0.point == n1.point && n0.edges == n1.edges && n0.triangles == n1.triangles && n0.next_weakly_intersect_node == n1.next_weakly_intersect_node;
+inline bool operator==(const TriVertex &v0, const TriVertex &v1) {
+    return v0.point == v1.point && v0.edges == v1.edges && v0.triangles == v1.triangles && v0.next_wi_vertex == v1.next_wi_vertex;
 }
 
-inline bool operator!=(const TriNode &n0, const TriNode &n1) {
-    return !(n0 == n1);
+inline bool operator!=(const TriVertex &v0, const TriVertex &v1) {
+    return !(v0 == v1);
 }
 
 inline bool operator==(const TriEdge &e0, const TriEdge &e1) {
-    return e0.nodes == e1.nodes && e0.triangles == e1.triangles && e0.opposites == e1.opposites;
+    return e0.vertices == e1.vertices && e0.triangles == e1.triangles && e0.opposites == e1.opposites;
 }
 
 inline bool operator!=(const TriEdge &e0, const TriEdge &e1) {
@@ -119,7 +119,7 @@ inline bool operator!=(const TriEdge &e0, const TriEdge &e1) {
 }
 
 inline bool operator==(const TriTriangle &t0, const TriTriangle &t1) {
-    return t0.nodes == t1.nodes && t0.edges == t1.edges;
+    return t0.vertices == t1.vertices && t0.edges == t1.edges;
 }
 
 inline bool operator!=(const TriTriangle &t0, const TriTriangle &t1) {
@@ -127,7 +127,7 @@ inline bool operator!=(const TriTriangle &t0, const TriTriangle &t1) {
 }
 
 inline bool operator==(const TriMesh &m0, const TriMesh &m1) {
-    return m0.nodes == m1.nodes && m0.edges == m1.edges && m0.triangles == m1.triangles;
+    return m0.vertices == m1.vertices && m0.edges == m1.edges && m0.triangles == m1.triangles;
 }
 
 inline bool operator!=(const TriMesh &m0, const TriMesh &m1) {

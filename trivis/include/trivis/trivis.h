@@ -33,7 +33,7 @@ public:
 
     /// ##### STRUCTURES ##### ///
 
-    struct ParamDefault {
+    struct DefaultParam {
         static constexpr double pl_bucket_size = 1.0;
         static constexpr bool pl_optimize_bucket_triangles = false;
         static constexpr std::array<double, 10> pl_eps1 = {1e-18, 1e-17, 1e-16, 1e-15, 1e-14, 1e-13, 1e-12, 1e-11, 1e-10, 1e-9};
@@ -54,8 +54,8 @@ public:
     };
 
     struct PointLocationResult {
-        int triangle_id;
-        std::vector<int> snap_to_nodes;
+        int tri_id;
+        std::vector<int> snap_to_vertices;
     };
 
     struct RayShootingResult {
@@ -63,7 +63,7 @@ public:
         geom::FPoint p;
         geom::FPoint p2;
         std::optional<int> edge_id;
-        std::optional<int> node_id;
+        std::optional<int> ver_id;
     };
 
 
@@ -226,7 +226,7 @@ public:
     ) const;
 
     bool IsVisible(
-        int node_id,
+        int ver_id,
         const geom::FPoint &p,
         std::optional<double> radius = std::nullopt,
         ExpansionStats *stats = nullptr
@@ -249,7 +249,7 @@ public:
     ) const;
 
     RayShootingResult ShootRay(
-        int node_id,
+        int ver_id,
         const geom::FPoint &direction,
         ExpansionStats *stats = nullptr
     ) const;
@@ -273,7 +273,7 @@ public:
     ) const;
 
     std::vector<int> VisibleVertices(
-        int node_id,
+        int ver_id,
         const std::vector<bool> *tabu_vertices = nullptr,
         std::optional<double> radius = std::nullopt,
         ExpansionStats *stats = nullptr
@@ -300,7 +300,7 @@ public:
     ) const;
 
     std::vector<int> VisiblePoints(
-        int node_id,
+        int ver_id,
         const geom::FPoints &points,
         const std::vector<std::optional<PointLocationResult>> &points_locations,
         std::optional<double> radius = std::nullopt,
@@ -317,7 +317,7 @@ public:
     ) const;
 
     std::vector<int> VisiblePoints(
-        int node_id,
+        int ver_id,
         const geom::FPoints &points,
         const std::vector<std::vector<int>> &triangle_points,
         std::optional<double> radius = std::nullopt,
@@ -385,7 +385,7 @@ public:
     ) const;
 
     AbstractVisibilityRegion VisibilityRegion(
-        int node_id,
+        int ver_id,
         std::optional<double> radius = std::nullopt,
         ExpansionStats *stats = nullptr
     ) const;
@@ -405,7 +405,7 @@ public:
     ) const;
 
     AbstractVisibilityRegion VisibilityRegionIterative(
-        int node_id,
+        int ver_id,
         std::optional<double> radius = std::nullopt,
         ExpansionStats *stats = nullptr
     ) const;
@@ -427,7 +427,7 @@ public:
     ) const;
 
     AbstractVisibilityRegion VisibilityRegionWithHistory(
-        int node_id,
+        int ver_id,
         std::vector<ExpansionHistoryStep> &history,
         std::optional<double> radius = std::nullopt,
         ExpansionStats *stats = nullptr
@@ -479,8 +479,8 @@ private:
     mesh::TriMesh _mesh;
     geom::FPolygons _triangles;
     pl::PointLocation _pl;
-    std::vector<double> _pl_eps1_seq{ParamDefault::pl_eps1.begin(), ParamDefault::pl_eps1.end()};
-    double _pl_eps2_squared = ParamDefault::pl_eps2_squared;
+    std::vector<double> _pl_eps1_seq{DefaultParam::pl_eps1.begin(), DefaultParam::pl_eps1.end()};
+    double _pl_eps2_squared = DefaultParam::pl_eps2_squared;
 
     /// ##### EXPAND EDGE: INTERSECTION OF RAY AND OBSTACLE ##### ///
 
@@ -488,8 +488,8 @@ private:
         int level,
         const geom::FPoint &q,
         const geom::FPoint &distant_t,
-        int node_l_id,
-        int node_r_id,
+        int rest_l_id,
+        int rest_r_id,
         int curr_edge_id,
         int curr_edge_tri_id,
         ExpansionStats *stats = nullptr
@@ -501,8 +501,8 @@ private:
         int level,
         const geom::FPoint &q,
         const geom::FPoint &t,
-        int node_l_id,
-        int node_r_id,
+        int rest_l_id,
+        int rest_r_id,
         int curr_edge_id,
         int curr_edge_tri_id,
         ExpansionStats *stats = nullptr

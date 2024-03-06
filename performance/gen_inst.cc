@@ -211,8 +211,8 @@ int MainBody(const ProgramOptionVariables &pov) {
     {   // Get node points.
         auto rng = std::mt19937(pov.random_seed);
         points.clear();
-        points.reserve(vis.mesh().nodes.size());
-        for (const auto &node: vis.mesh().nodes) {
+        points.reserve(vis.mesh().vertices.size());
+        for (const auto &node: vis.mesh().vertices) {
             points.push_back(node.point);
         }
         std::shuffle(points.begin(), points.end(), rng);
@@ -227,8 +227,8 @@ int MainBody(const ProgramOptionVariables &pov) {
     {   // Get close-to-node points.
         auto rng = std::mt19937(pov.random_seed);
         points.clear();
-        points.reserve(vis.mesh().nodes.size() * n_close_points);
-        for (const auto &node: vis.mesh().nodes) {
+        points.reserve(vis.mesh().vertices.size() * n_close_points);
+        for (const auto &node: vis.mesh().vertices) {
             for (int i = 0; i < n_close_points; ++i) {
                 points.emplace_back(node.point.x + normal_dists[i](rng), node.point.y + normal_dists[i](rng));
             }
@@ -247,7 +247,7 @@ int MainBody(const ProgramOptionVariables &pov) {
         points.clear();
         points.reserve(vis.mesh().edges.size());
         for (const auto &edge: vis.mesh().edges) {
-            points.emplace_back((vis.mesh().nodes[edge.nodes[0]].point + vis.mesh().nodes[edge.nodes[1]].point) / 2.0);
+            points.emplace_back((vis.mesh().vertices[edge.vertices[0]].point + vis.mesh().vertices[edge.vertices[1]].point) / 2.0);
         }
         std::shuffle(points.begin(), points.end(), rng);
         if (points.size() > pov.max_points) {
@@ -264,7 +264,7 @@ int MainBody(const ProgramOptionVariables &pov) {
         points.reserve(vis.mesh().edges.size() * n_close_points);
         for (const auto &edge: vis.mesh().edges) {
             for (int i = 0; i < n_close_points; ++i) {
-                auto midpoint = (vis.mesh().nodes[edge.nodes[0]].point + vis.mesh().nodes[edge.nodes[1]].point) / 2.0;
+                auto midpoint = (vis.mesh().vertices[edge.vertices[0]].point + vis.mesh().vertices[edge.vertices[1]].point) / 2.0;
                 points.emplace_back(midpoint.x + normal_dists[i](rng), midpoint.y + normal_dists[i](rng));
             }
         }

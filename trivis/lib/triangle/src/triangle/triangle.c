@@ -295,7 +295,7 @@
 #define BADTRIPERBLOCK 4092
 /* Number of flipped triangles allocated at once. */
 #define FLIPSTACKERPERBLOCK 252
-/* Number of splay tree nodes allocated at once. */
+/* Number of splay tree vertices allocated at once. */
 #define SPLAYNODEPERBLOCK 508
 
 /* The vertex types.   A DEADVERTEX has been deleted entirely.  An           */
@@ -499,7 +499,7 @@ enum finddirectionresult {WITHIN, LEFTCOLLINEAR, RIGHTCOLLINEAR};
 /*   pointers to subsegments (declared below; these pointers are usually     */
 /*   `dummysub').  It may or may not also contain user-defined attributes    */
 /*   and/or a floating-point "area constraint."  It may also contain extra   */
-/*   pointers for nodes, when the user asks for high-order elements.         */
+/*   pointers for vertices, when the user asks for high-order elements.         */
 /*   Because the size and structure of a `triangle' is not decided until     */
 /*   runtime, I haven't simply declared the type `triangle' as a struct.     */
 
@@ -660,7 +660,7 @@ struct mesh {
 
 /* Variables used to allocate memory for triangles, subsegments, vertices,   */
 /*   viri (triangles being eaten), encroached segments, bad (skinny or too   */
-/*   large) triangles, and splay tree nodes.                                 */
+/*   large) triangles, and splay tree vertices.                                 */
 
   struct memorypool triangles;
   struct memorypool subsegs;
@@ -701,7 +701,7 @@ struct mesh {
   int steinerleft;                 /* Number of Steiner points not yet used. */
   int vertexmarkindex;         /* Index to find boundary marker of a vertex. */
   int vertex2triindex;     /* Index to find a triangle adjacent to a vertex. */
-  int highorderindex;  /* Index to find extra nodes for high-order elements. */
+  int highorderindex;  /* Index to find extra vertices for high-order elements. */
   int elemattribindex;            /* Index to find attributes of a triangle. */
   int areaboundindex;             /* Index to find area bound of a triangle. */
   int checksegments;         /* Are there segments in the triangulation yet? */
@@ -1923,7 +1923,7 @@ void info()
   printf(
 "        switch is useful when calling Triangle from another program.\n");
   printf(
-"    -o2 Generates second-order subparametric elements with six nodes each.\n"
+"    -o2 Generates second-order subparametric elements with six vertices each.\n"
 );
   printf(
 "    -Y  No new vertices on the boundary.  This switch is useful when the\n");
@@ -2126,7 +2126,7 @@ void info()
   printf(
 "    The attributes, which are typically floating-point values of physical\n");
   printf(
-"    quantities (such as mass or conductivity) associated with the nodes of\n"
+"    quantities (such as mass or conductivity) associated with the vertices of\n"
 );
   printf(
 "    a finite element mesh, are copied unchanged to the output mesh.  If -q,\n"
@@ -2151,17 +2151,17 @@ void info()
   printf("    column unless they are suppressed by the -B switch.\n\n");
   printf("  .ele files:\n");
   printf(
-"    First line:  <# of triangles> <nodes per triangle> <# of attributes>\n");
+"    First line:  <# of triangles> <vertices per triangle> <# of attributes>\n");
   printf(
 "    Remaining lines:  <triangle #> <node> <node> <node> ... [attributes]\n");
   printf("\n");
   printf(
 "    Nodes are indices into the corresponding .node file.  The first three\n");
   printf(
-"    nodes are the corner vertices, and are listed in counterclockwise order\n"
+"    vertices are the corner vertices, and are listed in counterclockwise order\n"
 );
   printf(
-"    around each triangle.  (The remaining nodes, if any, depend on the type\n"
+"    around each triangle.  (The remaining vertices, if any, depend on the type\n"
 );
   printf("    of finite element used.)\n\n");
   printf(
@@ -2180,13 +2180,13 @@ void info()
   printf(
 "    In .ele files produced by Triangle, each triangular element has three\n");
   printf(
-"    nodes (vertices) unless the -o2 switch is used, in which case\n");
+"    vertices (vertices) unless the -o2 switch is used, in which case\n");
   printf(
-"    subparametric quadratic elements with six nodes each are generated.\n");
+"    subparametric quadratic elements with six vertices each are generated.\n");
   printf(
-"    The first three nodes are the corners in counterclockwise order, and\n");
+"    The first three vertices are the corners in counterclockwise order, and\n");
   printf(
-"    the fourth, fifth, and sixth nodes lie on the midpoints of the edges\n");
+"    the fourth, fifth, and sixth vertices lie on the midpoints of the edges\n");
   printf(
 "    opposite the first, second, and third vertices, respectively.\n");
   printf("\n");
@@ -2725,10 +2725,10 @@ void info()
 "  If you are refining a mesh composed of linear (three-node) elements, the\n"
 );
   printf(
-"  output mesh contains all the nodes present in the input mesh, in the same\n"
+"  output mesh contains all the vertices present in the input mesh, in the same\n"
 );
   printf(
-"  order, with new nodes added at the end of the .node file.  However, the\n");
+"  order, with new vertices added at the end of the .node file.  However, the\n");
   printf(
 "  refinement is not hierarchical: there is no guarantee that each output\n");
   printf(
@@ -2740,12 +2740,12 @@ void info()
 "  present in the output mesh.  Hence, a sequence of refined meshes forms a\n"
 );
   printf(
-"  hierarchy of nodes, but not a hierarchy of elements.  If you refine a\n");
+"  hierarchy of vertices, but not a hierarchy of elements.  If you refine a\n");
   printf(
 "  mesh of higher-order elements, the hierarchical property applies only to\n"
 );
   printf(
-"  the nodes at the corners of an element; the midpoint nodes on each edge\n");
+"  the vertices at the corners of an element; the midpoint vertices on each edge\n");
   printf("  are discarded before the mesh is refined.\n\n");
   printf(
 "  Maximum area constraints in .poly files operate differently from those in\n"
@@ -2918,7 +2918,7 @@ void info()
   printf(
 "  Triangle generates meshes with subparametric quadratic elements if the\n");
   printf(
-"  -o2 switch is specified.  Quadratic elements have six nodes per element,\n"
+"  -o2 switch is specified.  Quadratic elements have six vertices per element,\n"
 );
   printf(
 "  rather than three.  `Subparametric' means that the edges of the triangles\n"
@@ -2929,12 +2929,12 @@ void info()
 "  geometrically identical to linear elements, even though they can be used\n"
 );
   printf(
-"  with quadratic interpolating functions.  The three extra nodes of an\n");
+"  with quadratic interpolating functions.  The three extra vertices of an\n");
   printf(
 "  element fall at the midpoints of the three edges, with the fourth, fifth,\n"
 );
   printf(
-"  and sixth nodes appearing opposite the first, second, and third corners\n");
+"  and sixth vertices appearing opposite the first, second, and third corners\n");
   printf("  respectively.\n\n");
   printf("Domains with Small Angles:\n\n");
   printf(
@@ -4408,10 +4408,10 @@ struct behavior *b;
 {
   int trisize;
 
-  /* The index within each triangle at which the extra nodes (above three)  */
+  /* The index within each triangle at which the extra vertices (above three)  */
   /*   associated with high order elements are found.  There are three      */
   /*   pointers to other triangles, three pointers to corners, and possibly */
-  /*   three pointers to subsegments before the extra nodes.                */
+  /*   three pointers to subsegments before the extra vertices.                */
   m->highorderindex = 6 + (b->usesegments * 3);
   /* The number of bytes occupied by a triangle. */
   trisize = ((b->order + 1) * (b->order + 2) / 2 + (m->highorderindex - 3)) *
@@ -4433,7 +4433,7 @@ struct behavior *b;
   /* If a Voronoi diagram or triangle neighbor graph is requested, make    */
   /*   sure there's room to store an integer index in each triangle.  This */
   /*   integer index can occupy the same space as the subsegment pointers  */
-  /*   or attributes or area constraint or extra nodes.                    */
+  /*   or attributes or area constraint or extra vertices.                    */
   if ((b->voronoi || b->neighbors) &&
       (trisize < 6 * sizeof(triangle) + sizeof(int))) {
     trisize = 6 * sizeof(triangle) + sizeof(int);
@@ -11160,7 +11160,7 @@ struct behavior *b;
 /*  procedure will also read an .area file and set a maximum area constraint */
 /*  on each triangle.                                                        */
 /*                                                                           */
-/*  Vertices that are not corners of triangles, such as nodes on edges of    */
+/*  Vertices that are not corners of triangles, such as vertices on edges of    */
 /*  subparametric elements, are discarded.                                   */
 /*                                                                           */
 /*  This routine finds the adjacencies between triangles (and subsegments)   */
@@ -11408,7 +11408,7 @@ FILE *polyfile;
     }
 #endif /* not TRILIBRARY */
 
-    /* Find out about (and throw away) extra nodes. */
+    /* Find out about (and throw away) extra vertices. */
     for (j = 3; j < incorners; j++) {
 #ifdef TRILIBRARY
       killvertexindex = trianglelist[vertexindex++];
@@ -13793,7 +13793,7 @@ struct behavior *b;
 
 /*****************************************************************************/
 /*                                                                           */
-/*  highorder()   Create extra nodes for quadratic subparametric elements.   */
+/*  highorder()   Create extra vertices for quadratic subparametric elements.   */
 /*                                                                           */
 /*****************************************************************************/
 
@@ -13817,11 +13817,11 @@ struct behavior *b;
   if (!b->quiet) {
     printf("Adding vertices for second-order triangles.\n");
   }
-  /* The following line ensures that dead items in the pool of nodes    */
-  /*   cannot be allocated for the extra nodes associated with high     */
-  /*   order elements.  This ensures that the primary nodes (at the     */
+  /* The following line ensures that dead items in the pool of vertices    */
+  /*   cannot be allocated for the extra vertices associated with high     */
+  /*   order elements.  This ensures that the primary vertices (at the     */
   /*   corners of elements) will occur earlier in the output files, and */
-  /*   have lower indices, than the extra nodes.                        */
+  /*   have lower indices, than the extra vertices.                        */
   m->vertices.deaditemstack = (VOID *) NULL;
 
   traversalinit(&m->triangles);
@@ -15014,7 +15014,7 @@ char **argv;
 /*  edges.                                                                   */
 /*                                                                           */
 /*  WARNING:  In order to assign numbers to the Voronoi vertices, this       */
-/*  procedure messes up the subsegments or the extra nodes of every          */
+/*  procedure messes up the subsegments or the extra vertices of every          */
 /*  element.  Hence, you should call this procedure last.                    */
 /*                                                                           */
 /*****************************************************************************/
@@ -15691,7 +15691,7 @@ struct behavior *b;
              m->flipstackers.maxitems);
     }
     if (m->splaynodes.maxitems > 0) {
-      printf("  Maximum number of splay tree nodes: %ld\n",
+      printf("  Maximum number of splay tree vertices: %ld\n",
              m->splaynodes.maxitems);
     }
     printf("  Approximate heap memory use (bytes): %ld\n\n",

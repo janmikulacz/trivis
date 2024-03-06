@@ -332,7 +332,7 @@ int MainBody(const ProgramOptionVariables &pov) {
         ofs << ",time_init";
         ofs << ",time_preprocess";
         ofs << ",query_id";
-        ofs << ",node_id";
+        ofs << ",ver_id";
         ofs << ",weakly_simple";
         ofs << ",crashed";
         ofs << ",timeout";
@@ -374,9 +374,9 @@ int MainBody(const ProgramOptionVariables &pov) {
         int node_id = -1;
         bool weakly_simple = false;
         auto query_locate = vis.LocatePoint(query, std::vector<double>{}, 0.0);
-        if (query_locate && !query_locate->snap_to_nodes.empty()) {
-            node_id = query_locate->snap_to_nodes.front();
-            weakly_simple = query_locate->snap_to_nodes.size() > 1;
+        if (query_locate && !query_locate->snap_to_vertices.empty()) {
+            node_id = query_locate->snap_to_vertices.front();
+            weakly_simple = query_locate->snap_to_vertices.size() > 1;
         }
         // Load the algorithm data.
         auto algorithm_result = LoadPolygon(query_id, query, ifs_algorithm_data);

@@ -64,7 +64,7 @@
 /*  - If you are not using the `q', `a', `u', `D', `j', or `s' switches,     */
 /*    then the output points will be identical to the input points, except   */
 /*    possibly for the boundary markers.  If you don't need the boundary     */
-/*    markers, you should use the `N' (no nodes output) switch to save       */
+/*    markers, you should use the `N' (no vertices output) switch to save       */
 /*    memory.  (If you do need boundary markers, but need to save memory, a  */
 /*    good nasty trick is to set out->pointlist equal to in->pointlist       */
 /*    before calling triangulate(), so that Triangle overwrites the input    */
@@ -108,7 +108,7 @@
 /*                                                                           */
 /*  `trianglelist':  An array of triangle corners.  The first triangle's     */
 /*    first corner is at index [0], followed by its other two corners in     */
-/*    counterclockwise order, followed by any other nodes if the triangle    */
+/*    counterclockwise order, followed by any other vertices if the triangle    */
 /*    represents a nonlinear element.  Each triangle occupies                */
 /*    `numberofcorners' ints.                                                */
 /*  `triangleattributelist':  An array of triangle attributes.  Each         */

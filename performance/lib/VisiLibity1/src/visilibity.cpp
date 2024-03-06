@@ -1847,7 +1847,7 @@ Polyline Environment::shortest_path(const Point &start, const Point &finish,
       finish_visible[k] = false;
   }
 
-  // Initialize search tree of visited nodes
+  // Initialize search tree of visited vertices
   std::list<Shortest_Path_Node> T;
   //:WARNING:
   // If T is a vector it is crucial to make T large enough that it
@@ -1856,7 +1856,7 @@ Polyline Environment::shortest_path(const Point &start, const Point &finish,
   // to fail.
   // T.reserve( n() + 3 );
 
-  // Initialize priority queue of unexpanded nodes
+  // Initialize priority queue of unexpanded vertices
   std::set<Shortest_Path_Node> Q;
 
   // Construct initial node

@@ -215,7 +215,7 @@ int MainBody(const ProgramOptionVariables &pov) {
     const auto &lim = vis.limits();
     LOGF_INF("Map limits [ MIN: " << lim.x_min << ", " << lim.y_min << " | MAX: " << lim.x_max << ", " << lim.y_max << " ].");
 
-    int n_nodes = static_cast<int>(vis.mesh().nodes.size());
+    int n_nodes = static_cast<int>(vis.mesh().vertices.size());
     int n_points = pov.n_points;
     LOGF_INF("Precomputing " << n_points << " random points.");
     trivis::geom::FPoints points;
@@ -230,7 +230,7 @@ int MainBody(const ProgramOptionVariables &pov) {
 
     // Get node points.
     trivis::geom::FPoints node_points(n_nodes);
-    for (int node_id = 0; node_id < vis.mesh().nodes.size(); ++node_id) {
+    for (int node_id = 0; node_id < vis.mesh().vertices.size(); ++node_id) {
         node_points[node_id] = vis.mesh().point(node_id);
     }
 

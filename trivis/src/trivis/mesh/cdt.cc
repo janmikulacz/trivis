@@ -144,37 +144,37 @@ void mesh::TriangulateMapCDT(
         triangles.push_back(std::move(triangle));
     }
 
-    // Fill graph nodes.
-    mesh.nodes.reserve(out.numberofpoints);
+    // Fill graph vertices.
+    mesh.vertices.reserve(out.numberofpoints);
     for (int i = 0; i < 2 * out.numberofpoints; i += 2) {
-        TriNode node;
+        TriVertex node;
         node.point = geom::MakePoint(out.pointlist[i], out.pointlist[i + 1]);
-        mesh.nodes.push_back(std::move(node));
+        mesh.vertices.push_back(std::move(node));
     }
 
     // Fill graph edges.
-    mesh.nodes.reserve(out.numberofedges);
+    mesh.vertices.reserve(out.numberofedges);
     for (int i = 0, j = 0; i < out.numberofedges * 2; i += 2, ++j) {
         TriEdge edge;
-        edge.nodes[0] = out.edgelist[i];
-        edge.nodes[1] = out.edgelist[i + 1];
+        edge.vertices[0] = out.edgelist[i];
+        edge.vertices[1] = out.edgelist[i + 1];
         mesh.edges.push_back(std::move(edge));
-        mesh.nodes[out.edgelist[i]].edges.push_back(j);
-        mesh.nodes[out.edgelist[i + 1]].edges.push_back(j);
+        mesh.vertices[out.edgelist[i]].edges.push_back(j);
+        mesh.vertices[out.edgelist[i + 1]].edges.push_back(j);
     }
 
     // Fill graph triangles.
     mesh.triangles.reserve(out.numberoftriangles);
     for (int i = 0, j = 0; i < out.numberoftriangles * 3; i += 3, ++j) {
         TriTriangle triangle{};
-        triangle.nodes[0] = out.trianglelist[i];
-        triangle.nodes[1] = out.trianglelist[i + 1];
-        triangle.nodes[2] = out.trianglelist[i + 2];
+        triangle.vertices[0] = out.trianglelist[i];
+        triangle.vertices[1] = out.trianglelist[i + 1];
+        triangle.vertices[2] = out.trianglelist[i + 2];
         triangle.edges = {-1, -1, -1};
         mesh.triangles.push_back(triangle);
-        mesh.nodes[out.trianglelist[i]].triangles.push_back(j);
-        mesh.nodes[out.trianglelist[i + 1]].triangles.push_back(j);
-        mesh.nodes[out.trianglelist[i + 2]].triangles.push_back(j);
+        mesh.vertices[out.trianglelist[i]].triangles.push_back(j);
+        mesh.vertices[out.trianglelist[i + 1]].triangles.push_back(j);
+        mesh.vertices[out.trianglelist[i + 2]].triangles.push_back(j);
     }
 
     // Voronoi edges <=> triangles.
@@ -188,7 +188,7 @@ void mesh::TriangulateMapCDT(
                 }
             }
             mesh.edges[j].triangles.push_back(tri_id);
-            mesh.edges[j].opposites.push_back(OppositeNode(mesh, tri_id, j));
+            mesh.edges[j].opposites.push_back(OppositeVertex(mesh, tri_id, j));
         }
         tri_id = vorout.edgelist[i + 1];
         if (tri_id != -1) {
@@ -199,7 +199,7 @@ void mesh::TriangulateMapCDT(
                 }
             }
             mesh.edges[j].triangles.push_back(tri_id);
-            mesh.edges[j].opposites.push_back(OppositeNode(mesh, tri_id, j));
+            mesh.edges[j].opposites.push_back(OppositeVertex(mesh, tri_id, j));
         }
     }
 
