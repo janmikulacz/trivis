@@ -13,7 +13,7 @@
 #include <string>
 #include <optional>
 
-#include "trivis/visibility_regions.h"
+#include "trivis/vis_regions.h"
 
 namespace trivis_plus::data_loading {
 

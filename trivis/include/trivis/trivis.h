@@ -11,7 +11,7 @@
 #define TRIVIS_TRIVIS_H_
 
 #include "trivis/geom/poly_map.h"
-#include "trivis/visibility_regions.h"
+#include "trivis/vis_regions.h"
 
 #include "trivis/mesh/tri_mesh.h"
 

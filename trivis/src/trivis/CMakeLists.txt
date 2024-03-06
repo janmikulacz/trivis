@@ -9,7 +9,7 @@ set(Trivis_SRC
         utils/clipper_utils.cc
         utils/random_points.cc
         trivis.cc
-        visibility_regions.cc
+        vis_regions.cc
 )
 add_library(Trivis ${Trivis_SRC})
 target_link_libraries(Trivis Clipper2 RobustPredicate Triangle)

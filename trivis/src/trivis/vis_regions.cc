@@ -1,5 +1,5 @@
 /**
- * File:   visibility_region.cc
+ * File:   vis_regions.cc
  *
  * Date:   13.04.2022
  * Author: Jan Mikula
@@ -7,7 +7,7 @@
  *
  */
 
-#include "trivis/visibility_regions.h"
+#include "trivis/vis_regions.h"
 
 #include <iostream>
 #include <algorithm>

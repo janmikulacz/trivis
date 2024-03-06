@@ -11,7 +11,7 @@
 #define TRIVIS_UTILS_CLIPPER_GEOM_H_
 
 #include "trivis/geom/poly_map.h"
-#include "trivis/visibility_regions.h"
+#include "trivis/vis_regions.h"
 #include "trivis/utils/clipper_utils.h"
 
 namespace trivis::utils {

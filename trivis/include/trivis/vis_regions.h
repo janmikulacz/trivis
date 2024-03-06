@@ -1,5 +1,5 @@
 /**
- * File:   visibility_region.h
+ * File:   vis_regions.h
  *
  * Date:   30.03.2022
  * Author: Jan Mikula
@@ -7,8 +7,8 @@
  *
  */
 
-#ifndef TRIVIS_VISIBILITY_REGIONS_H_
-#define TRIVIS_VISIBILITY_REGIONS_H_
+#ifndef TRIVIS_VIS_REGIONS_H_
+#define TRIVIS_VIS_REGIONS_H_
 
 #include <vector>
 #include <optional>
@@ -82,20 +82,11 @@ double Area(const RadialVisibilityRegion &region);
 
 void RemoveAntennas(RadialVisibilityRegion &region);
 
-void IntersectWithCircleCenteredAtSeed(
-    RadialVisibilityRegion &region,
-    std::optional<double> radius = std::nullopt
-);
+void IntersectWithCircleCenteredAtSeed(RadialVisibilityRegion &region, std::optional<double> radius = std::nullopt);
 
-void RemoveShortEdges(
-    RadialVisibilityRegion &region,
-    double min_edge_length
-);
+void RemoveShortEdges(RadialVisibilityRegion &region, double min_edge_length);
 
-void SampleArcEdges(
-    RadialVisibilityRegion &region,
-    double max_sample_angle
-);
+void SampleArcEdges(RadialVisibilityRegion &region, double max_sample_angle);
 
 geom::FPolygon ToPolygon(const RadialVisibilityRegion &region);
 
@@ -160,4 +151,4 @@ inline geom::FPolygon RadialVisibilityRegion::ToPolygon() const {
 
 }
 
-#endif //TRIVIS_VISIBILITY_REGIONS_H_
+#endif //TRIVIS_VIS_REGIONS_H_
