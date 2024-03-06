@@ -35,11 +35,19 @@ bool data_loading::LoadVisibilityRegion(
         if (token == "[SEED]") {
             ifs >> visibility_region.seed.x;
             ifs >> visibility_region.seed.y;
-            ifs >> visibility_region.seed_id;
+            int seed_id;
+            ifs >> seed_id;
+            if (seed_id != -1) {
+                visibility_region.seed_id = seed_id;
+            }
             continue;
         }
         if (token == "[RADIUS]") {
-            ifs >> visibility_region.radius;
+            double radius;
+            ifs >> radius;
+            if (radius != -1.0) {
+                visibility_region.radius = radius;
+            }
             continue;
         }
         if (token == "[VERTICES]") {

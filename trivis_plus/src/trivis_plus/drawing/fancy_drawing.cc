@@ -51,14 +51,16 @@ void drawing::FancyDrawRadialVisibilityRegion(
     drawer.DrawArc(vis_reg.seed, 0.08, 0.0, 2.0 * M_PI, w * 0.02, colors.point);
     drawer.DrawArc(vis_reg.seed, 0.04, 0.0, 2.0 * M_PI, w * 0.02, colors.point);
     drawer.DrawPoint(vis_reg.seed, w * 0.02, colors.point);
-    auto reg_with_arcs_samples = SampleArcEdges(vis_reg, M_PI / 180);
-    auto polygon = Trivis::ConvertToPolygon(reg_with_arcs_samples);
-    if (vis_reg.radius > 0) {
-        drawer.DrawArc(vis_reg.seed, vis_reg.radius, 0.0, 2.0 * M_PI, w * 0.3, colors.base, 0.2);
+    auto reg_with_arcs_samples = vis_reg;
+    reg_with_arcs_samples.SampleArcEdges(M_PI / 180);
+    auto polygon = reg_with_arcs_samples.ToPolygon();
+    double vis_radius = vis_reg.radius.value_or(0.0);
+    if (vis_radius > 0) {
+        drawer.DrawArc(vis_reg.seed, vis_radius, 0.0, 2.0 * M_PI, w * 0.3, colors.base, 0.2);
     }
     drawer.DrawPolygon(polygon, colors.base, 0.5);
     if (vis_reg.vertices.size() <= 1) {
-        drawer.DrawArc(vis_reg.seed, vis_reg.radius, 0.0, 2.0 * M_PI, w * 0.3, colors.edge_arc);
+        drawer.DrawArc(vis_reg.seed, vis_radius, 0.0, 2.0 * M_PI, w * 0.3, colors.edge_arc);
         return;
     }
 
@@ -73,7 +75,7 @@ void drawing::FancyDrawRadialVisibilityRegion(
             drawer.DrawLine(vi_prev.point, vi.point, w * 0.2, colors.base, 0.2);
             auto a = vi.point - vis_reg.seed;
             auto b = vi_prev.point - vis_reg.seed;
-            drawer.DrawArc(vis_reg.seed, vis_reg.radius, std::atan2(a.x, a.y) - M_PI_2, std::atan2(b.x, b.y) - M_PI_2, w * 0.2, colors.edge_arc);
+            drawer.DrawArc(vis_reg.seed, vis_radius, std::atan2(a.x, a.y) - M_PI_2, std::atan2(b.x, b.y) - M_PI_2, w * 0.2, colors.edge_arc);
         } else if (vi.edge_flag == -3) {
             drawer.DrawLine(vi_prev.point, vi.point, w * 0.2, colors.edge_other);
         } else {

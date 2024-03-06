@@ -243,7 +243,7 @@ int MainBody(const ProgramOptionVariables &pov) {
             time_vis_poly = clock.TimeInSeconds();
             clock.Restart();
             if (abstract_vis_reg) {
-                vis_reg = vis.ComputeIntersections(*abstract_vis_reg);
+                vis_reg = vis.ToRadialVisibilityRegion(*abstract_vis_reg);
             }
             time_intersections = clock.TimeInSeconds();
             if (!query_location->snap_to_nodes.empty()) {

@@ -435,77 +435,9 @@ public:
 
     /// ##### VISIBILITY REGIONS POSTPROCESSING AND UTILITIES ##### ///
 
-    [[nodiscard]] RadialVisibilityRegion ComputeIntersections(
+    [[nodiscard]] RadialVisibilityRegion ToRadialVisibilityRegion(
         const AbstractVisibilityRegion &abstract,
         bool line_line_mode = true
-    ) const;
-
-    [[nodiscard]] static bool IsValid(const RadialVisibilityRegion &visibility_region);
-
-    static void RemoveAntennas(
-        RadialVisibilityRegion &visibility_region
-    );
-
-    [[nodiscard]] static RadialVisibilityRegion IntersectWithCircle(
-        double radius,
-        const RadialVisibilityRegion &visibility_region
-    );
-
-    static void RemoveShortEdges(
-        double min_edge_length,
-        RadialVisibilityRegion &visibility_region
-    );
-
-    [[nodiscard]] static RadialVisibilityRegion SampleArcEdges(
-        const RadialVisibilityRegion &visibility_region,
-        double max_angle
-    );
-
-    [[nodiscard]] RadialVisibilityRegion Postprocess(
-        const AbstractVisibilityRegion &abstract,
-        bool line_line_mode_intersections = true,
-        bool remove_antennas = false,
-        std::optional<double> radius = std::nullopt,
-        std::optional<double> min_edge_length = std::nullopt,
-        std::optional<double> sampling_max_angle = std::nullopt
-    ) const;
-
-    [[nodiscard]] static geom::FPolygon ConvertToPolygon(
-        const RadialVisibilityRegion &visibility_region
-    );
-
-    /// ##### SHORTCUTS: VISIBILITY REGIONS + POSTPROCESSING ##### ///
-
-    std::optional<RadialVisibilityRegion> VisibilityRegionWithPostprocessing(
-        const geom::FPoint &q,
-        const PointLocationResult &q_location,
-        std::optional<double> radius = std::nullopt,
-        bool line_line_mode_intersections = true,
-        bool remove_antennas = false,
-        std::optional<double> min_edge_length = std::nullopt,
-        std::optional<double> sampling_max_angle = std::nullopt,
-        ExpansionStats *stats = nullptr
-    ) const;
-
-    std::optional<RadialVisibilityRegion> VisibilityRegionWithPostprocessing(
-        const geom::FPoint &q,
-        int q_triangle_id,
-        std::optional<double> radius = std::nullopt,
-        bool line_line_mode_intersections = true,
-        bool remove_antennas = false,
-        std::optional<double> min_edge_length = std::nullopt,
-        std::optional<double> sampling_max_angle = std::nullopt,
-        ExpansionStats *stats = nullptr
-    ) const;
-
-    std::optional<RadialVisibilityRegion> VisibilityRegionWithPostprocessing(
-        int node_id,
-        std::optional<double> radius = std::nullopt,
-        bool line_line_mode_intersections = true,
-        bool remove_antennas = false,
-        std::optional<double> min_edge_length = std::nullopt,
-        std::optional<double> sampling_max_angle = std::nullopt,
-        ExpansionStats *stats = nullptr
     ) const;
 
     /// ##### GENERAL UTILITIES ##### ///

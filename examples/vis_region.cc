@@ -226,11 +226,14 @@ int MainBody(const ProgramOptionVariables &pov) {
         LOGF_FTL("Query point is outside of the map!");
         return EXIT_FAILURE;
     }
-    std::optional<trivis::RadialVisibilityRegion> visibility_region_opt = vis.VisibilityRegionWithPostprocessing(q, *q_location_opt, vis_radius_opt);
-    if (!visibility_region_opt) {
+
+    std::optional<trivis::AbstractVisibilityRegion> abstract_region = vis.VisibilityRegion(q, *q_location_opt, vis_radius_opt);
+    if (!abstract_region) {
         LOGF_FTL("Error while computing visibility region!");
         return EXIT_FAILURE;
     }
+    trivis::RadialVisibilityRegion region = vis.ToRadialVisibilityRegion(*abstract_region);
+    region.IntersectWithCircleCenteredAtSeed();
     LOGF_INF("<< DONE. It took " << clock.TimeInSeconds() << " seconds.");
 
     // Draw the result.
@@ -246,8 +249,8 @@ int MainBody(const ProgramOptionVariables &pov) {
     auto drawer = dr::MakeMapDrawer(vis.map());
     drawer.OpenPDF(pdf_file_str);
     dr::FancyDrawMap(drawer, vis);
-    if (visibility_region_opt) {
-        dr::FancyDrawRadialVisibilityRegion(drawer, *visibility_region_opt, dr::VisibilityRegionColors{}, 0.5, 0.5);
+    if (q_location_opt) {
+        dr::FancyDrawRadialVisibilityRegion(drawer, region, dr::VisibilityRegionColors{}, 0.5, 0.5);
     } else {
         drawer.DrawPoint(q, 0.1, dr::kColorBlueViolet);
         if (vis_radius_opt) {

@@ -1658,7 +1658,7 @@ std::optional<AbstractVisibilityRegion> Trivis::VisibilityRegionWithHistory(
 
 /// ##### VISIBILITY REGIONS POSTPROCESSING AND UTILITIES ##### ///
 
-RadialVisibilityRegion Trivis::ComputeIntersections(
+RadialVisibilityRegion Trivis::ToRadialVisibilityRegion(
     const AbstractVisibilityRegion &abstract,
     bool line_line_mode
 ) const {
@@ -1668,8 +1668,8 @@ RadialVisibilityRegion Trivis::ComputeIntersections(
     ret.seed = abstract.seed;
     int n_minus_1 = static_cast<int>(abstract.segments.size()) - 1;
     for (int i_prev = n_minus_1, i = 0; i < abstract.segments.size(); i_prev = i++) {
-        AbstractVisibilityRegionSegment seg_prev = abstract.segments[i_prev];
-        AbstractVisibilityRegionSegment seg = abstract.segments[i];
+        const auto &seg_prev = abstract.segments[i_prev];
+        const auto &seg = abstract.segments[i];
         if (seg_prev.v2.is_intersection || seg_prev.v2.id != seg.v1.id) {
             // Append v1.
             AppendNotCollinearWithIntersection(abstract.seed, seg.v1, -1, false, line_line_mode, ret);
@@ -1678,209 +1678,6 @@ RadialVisibilityRegion Trivis::ComputeIntersections(
         AppendNotCollinearWithIntersection(abstract.seed, seg.v2, seg.id, i == n_minus_1, line_line_mode, ret);
     }
     return ret;
-}
-
-bool Trivis::IsValid(const RadialVisibilityRegion &visibility_region) {
-    return IsValid(visibility_region);
-}
-
-void Trivis::RemoveAntennas(
-    RadialVisibilityRegion &visibility_region
-) {
-    assert(IsValid(visibility_region));
-    RemoveAntennas(visibility_region);
-}
-
-RadialVisibilityRegion Trivis::IntersectWithCircle(
-    double radius,
-    const RadialVisibilityRegion &visibility_region
-) {
-    assert(IsValid(visibility_region));
-    RadialVisibilityRegion ret;
-    ret.radius = radius;
-    ret.seed_id = visibility_region.seed_id;
-    ret.seed = visibility_region.seed;
-    double sq_radius = radius * radius;
-    int n_minus_1 = static_cast<int>(visibility_region.vertices.size()) - 1;
-    for (int i_prev = n_minus_1, i = 0; i < visibility_region.vertices.size(); i_prev = i++) {
-        const auto &vi_prev = visibility_region.vertices[i_prev];
-        const auto &vi = visibility_region.vertices[i];
-        if (vi.edge_flag < -1) {
-            // The whole edge is outside the radius: IGNORE IT.
-            continue;
-        }
-        bool is_inside_pi_prev = vi_prev.point.SquaredDistanceTo(visibility_region.seed) <= sq_radius;
-        bool is_inside_pi = vi.point.SquaredDistanceTo(visibility_region.seed) <= sq_radius;
-        if (is_inside_pi_prev) {
-            if (is_inside_pi) {
-                // The whole edge is inside the radius (no intersection).
-                if (vi_prev.edge_flag < -1) {
-                    ret.vertices.push_back({vi_prev.vertex_flag, -2, vi_prev.point});
-                }
-                ret.vertices.push_back({vi.vertex_flag, vi.edge_flag, vi.point});
-            } else {
-                // The first endpoint is inside, the second is outside (1 intersection).
-                FPoint intersection;
-                if (vi.edge_flag < 0) {
-                    intersection = vi_prev.point - visibility_region.seed;
-                    intersection = intersection / intersection.Norm();
-                    intersection = visibility_region.seed + intersection * radius;
-                } else {
-                    auto intersections = LineCircleIntersections(vi_prev.point, vi.point, visibility_region.seed, radius, true);
-                    if (intersections.empty()) {
-                        intersections = LineCircleIntersections(vi_prev.point.CopySwappedXY(), vi.point.CopySwappedXY(), visibility_region.seed.CopySwappedXY(), radius, true);
-                        if (intersections.empty()) {
-                            std::cerr << std::fixed << "[TriVis][IntersectWithCircle] LineCircle intersections should not be empty (1)! ";
-                            std::cerr << "Line: " << vi_prev.point << ", " << vi.point << ", Circle:" << visibility_region.seed << ", " << radius << ".\n";
-                            continue;
-                        }
-                        intersections[0].SwapXY();
-                    }
-                    intersection = intersections[0];
-                }
-                ret.vertices.push_back({-1, vi.edge_flag, intersection});
-            }
-        } else if (is_inside_pi) {
-            // The first endpoint is outside, the second is inside (1 intersection).
-            FPoint intersection;
-            if (vi.edge_flag < 0) {
-                intersection = vi_prev.point - visibility_region.seed;
-                intersection = intersection / intersection.Norm();
-                intersection = visibility_region.seed + intersection * radius;
-            } else {
-                auto intersections = LineCircleIntersections(vi_prev.point, vi.point, visibility_region.seed, radius, true);
-                if (intersections.empty()) {
-                    intersections = LineCircleIntersections(vi_prev.point.CopySwappedXY(), vi.point.CopySwappedXY(), visibility_region.seed.CopySwappedXY(), radius, true);
-                    if (intersections.empty()) {
-                        std::cerr << std::fixed << "[TriVis][IntersectWithCircle] LineCircle intersections should not be empty (2)! ";
-                        std::cerr << "Line: " << vi_prev.point << ", " << vi.point << ", Circle:" << visibility_region.seed << ", " << radius << ".\n";
-                        continue;
-                    }
-                    intersections[0].SwapXY();
-                }
-                intersection = intersections[0];
-            }
-            ret.vertices.push_back({-1, -2, intersection});
-            ret.vertices.push_back(vi);
-        } else {
-            // Both endpoints are outside (2 intersections).
-            auto intersections = LineCircleIntersections(vi_prev.point, vi.point, visibility_region.seed, radius, true);
-            if (!intersections.empty()) {
-                if (intersections.size() > 1 && vi_prev.point.SquaredDistanceTo(intersections[0]) > vi_prev.point.SquaredDistanceTo(intersections[1])) {
-                    std::swap(intersections[0], intersections[1]);
-                }
-                ret.vertices.push_back({-1, -2, intersections[0]});
-                if (intersections.size() > 1) {
-                    ret.vertices.push_back({-1, vi.edge_flag, intersections[1]});
-                }
-            }
-        }
-    }
-    return ret;
-}
-
-void Trivis::RemoveShortEdges(
-    double min_edge_length,
-    RadialVisibilityRegion &visibility_region
-) {
-    assert(IsValid(visibility_region));
-    RemoveShortEdges(min_edge_length, visibility_region);
-}
-
-RadialVisibilityRegion Trivis::SampleArcEdges(
-    const RadialVisibilityRegion &visibility_region,
-    double max_angle
-) {
-    assert(IsValid(visibility_region));
-    return SampleArcEdges(visibility_region, max_angle);
-}
-
-RadialVisibilityRegion Trivis::Postprocess(
-    const AbstractVisibilityRegion &abstract,
-    bool line_line_mode_intersections,
-    bool remove_antennas,
-    std::optional<double> radius,
-    std::optional<double> min_edge_length,
-    std::optional<double> sampling_max_angle
-) const {
-    auto ret = ComputeIntersections(abstract, line_line_mode_intersections);
-    if (remove_antennas) {
-        RemoveAntennas(ret);
-    }
-    if (radius) {
-        ret = IntersectWithCircle(*radius, ret);
-    }
-    if (min_edge_length) {
-        RemoveShortEdges(*min_edge_length, ret);
-    }
-    if (sampling_max_angle) {
-        ret = SampleArcEdges(ret, *sampling_max_angle);
-    }
-    return ret;
-}
-
-geom::FPolygon Trivis::ConvertToPolygon(
-    const RadialVisibilityRegion &visibility_region
-) {
-    assert(IsValid(visibility_region));
-    geom::FPolygon ret;
-    ret.reserve(visibility_region.vertices.size());
-    for (const auto &v: visibility_region.vertices) {
-        ret.push_back(v.point);
-    }
-    return ret;
-}
-
-/// ##### SHORTCUTS: VISIBILITY REGIONS + POSTPROCESSING ##### ///
-
-std::optional<RadialVisibilityRegion> Trivis::VisibilityRegionWithPostprocessing(
-    const geom::FPoint &q,
-    const PointLocationResult &q_location,
-    std::optional<double> radius,
-    bool line_line_mode_intersections,
-    bool remove_antennas,
-    std::optional<double> min_edge_length,
-    std::optional<double> sampling_max_angle,
-    ExpansionStats *stats
-) const {
-    auto abstract_opt = VisibilityRegion(q, q_location, radius, stats);
-    if (!abstract_opt) {
-        return std::nullopt;
-    }
-    return Postprocess(*abstract_opt, line_line_mode_intersections, remove_antennas, radius, min_edge_length, sampling_max_angle);
-}
-
-std::optional<RadialVisibilityRegion> Trivis::VisibilityRegionWithPostprocessing(
-    const geom::FPoint &q,
-    int q_triangle_id,
-    std::optional<double> radius,
-    bool line_line_mode_intersections,
-    bool remove_antennas,
-    std::optional<double> min_edge_length,
-    std::optional<double> sampling_max_angle,
-    ExpansionStats *stats
-) const {
-    auto abstract_opt = VisibilityRegion(q, q_triangle_id, radius, stats);
-    if (!abstract_opt) {
-        return std::nullopt;
-    }
-    return Postprocess(*abstract_opt, line_line_mode_intersections, remove_antennas, radius, min_edge_length, sampling_max_angle);
-}
-
-std::optional<RadialVisibilityRegion> Trivis::VisibilityRegionWithPostprocessing(
-    int node_id,
-    std::optional<double> radius,
-    bool line_line_mode_intersections,
-    bool remove_antennas,
-    std::optional<double> min_edge_length,
-    std::optional<double> sampling_max_angle,
-    ExpansionStats *stats
-) const {
-    auto abstract_opt = VisibilityRegion(node_id, radius, stats);
-    if (!abstract_opt) {
-        return std::nullopt;
-    }
-    return Postprocess(*abstract_opt, line_line_mode_intersections, remove_antennas, radius, min_edge_length, sampling_max_angle);
 }
 
 /// ##### GENERAL UTILITIES ##### ///
