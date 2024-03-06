@@ -18,6 +18,7 @@
 #include "trivis/utils/simple_clock.h"
 
 #include "trivis_plus/data_loading/load_map.h"
+#include "trivis_plus/data_loading/load_mesh.h"
 #include "trivis_plus/drawing/fancy_drawing.h"
 #include "trivis_plus/utils/log.h"
 
@@ -188,7 +189,7 @@ int MainBody(const ProgramOptionVariables &pov) {
     LOGF_INF(">> Saving mesh and drawing.");
     clock.Restart();
     std::string mesh_path_no_ext = pov.mesh_dir + "/" + pov.map_name + "_cdt";
-    trivis::Trivis::SaveMesh(vis.mesh(), mesh_path_no_ext + ".txt");
+    trivis_plus::data_loading::SaveTriMesh(vis.mesh(), mesh_path_no_ext + ".txt");
     auto drawer = dr::MakeMapDrawer(vis.map());
     drawer.OpenPDF(mesh_path_no_ext + ".pdf");
     drawer.DrawMap();

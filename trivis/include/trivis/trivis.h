@@ -440,19 +440,6 @@ public:
         bool line_line_mode = true
     ) const;
 
-    /// ##### GENERAL UTILITIES ##### ///
-
-    static bool SaveMesh(
-        const mesh::TriMesh &mesh,
-        const std::string &file,
-        std::stringstream *info = nullptr
-    );
-
-    static std::optional<mesh::TriMesh> LoadMesh(
-        const std::string &file,
-        std::stringstream *info = nullptr
-    );
-
 private:
 
     ///=================///

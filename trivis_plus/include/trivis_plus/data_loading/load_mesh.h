@@ -17,16 +17,16 @@
 
 namespace trivis_plus::data_loading {
 
-bool LoadTriMesh(
-    const std::string &file,
-    const trivis::geom::FPoints &points,
-    trivis::mesh::TriMesh &mesh
-) noexcept(false);
 
-std::string LoadTriMeshSafely(
+bool SaveTriMesh(
+    const trivis::mesh::TriMesh &mesh,
     const std::string &file,
-    const trivis::geom::FPoints &points,
-    trivis::mesh::TriMesh &mesh
+    std::stringstream *info = nullptr
+);
+
+std::optional<trivis::mesh::TriMesh> LoadTriMesh(
+    const std::string &file,
+    std::stringstream *info = nullptr
 );
 
 }
