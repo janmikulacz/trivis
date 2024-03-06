@@ -373,7 +373,7 @@ int MainBody(const ProgramOptionVariables &pov) {
         trivis::geom::FPoint query(x, y);
         int node_id = -1;
         bool weakly_simple = false;
-        auto query_locate = vis.LocatePoint(query, 0.0);
+        auto query_locate = vis.LocatePoint(query, std::vector<double>{}, 0.0);
         if (query_locate && !query_locate->snap_to_nodes.empty()) {
             node_id = query_locate->snap_to_nodes.front();
             weakly_simple = query_locate->snap_to_nodes.size() > 1;
