@@ -18,14 +18,13 @@ bool trivis_plus::data_loading::SaveTriMesh(
     const std::string &file,
     std::stringstream *info
 ) {
-    std::fstream fs;
-    fs.open(file, std::ios::out | std::ios::trunc);
+    std::ofstream fs(file);
     if (!fs.is_open()) {
         if (info) *info << "Cannot open file " << file << " for writing.\n";
         return false;
     }
     fs << "MESH TRIANGULAR VERSION 1.0\n";
-    fs << "\n[vertexS]\n";
+    fs << "\n[NODES]\n";
     fs << mesh.vertices.size() << "\n";
     for (int ver_id = 0; ver_id < mesh.vertices.size(); ++ver_id) {
         const auto &vertex = mesh.vertices[ver_id];
@@ -44,7 +43,7 @@ bool trivis_plus::data_loading::SaveTriMesh(
             fs << " " << triangle_id;
         }
         // split partner
-        fs << " " << vertex.next_wi_vertex.value_or(-1);
+        fs << " " << vertex.next_weak_intersect_ver.value_or(-1);
         fs << "\n";
     }
     fs << "\n[EDGES]\n";
@@ -86,8 +85,7 @@ std::optional<trivis::mesh::TriMesh> trivis_plus::data_loading::LoadTriMesh(
     const std::string &file,
     std::stringstream *info
 ) {
-    std::fstream fs;
-    fs.open(file, std::ios::in);
+    std::ifstream fs(file);
     if (!fs.is_open()) {
         if (info) *info << "Cannot open file " << file << " for reading.\n";
         return std::nullopt;
@@ -117,7 +115,7 @@ std::optional<trivis::mesh::TriMesh> trivis_plus::data_loading::LoadTriMesh(
         trivis::mesh::TriMesh out_mesh;
         while (!fs.eof()) {
             fs >> token;
-            if (token == "[vertexS]") {
+            if (token == "[NODES]") {
                 int n_vertices;
                 fs >> n_vertices;
                 out_mesh.vertices.resize(n_vertices);
@@ -144,7 +142,7 @@ std::optional<trivis::mesh::TriMesh> trivis_plus::data_loading::LoadTriMesh(
                     int next_weakly_simple_node;
                     fs >> next_weakly_simple_node;
                     if (next_weakly_simple_node != -1) {
-                        vertex.next_wi_vertex = next_weakly_simple_node;
+                        vertex.next_weak_intersect_ver = next_weakly_simple_node;
                     }
                 }
 

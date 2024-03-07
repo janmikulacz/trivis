@@ -82,3 +82,28 @@ std::string data_loading::LoadVisibilityRegionSafely(
     }
     return "ok";
 }
+
+bool data_loading::SaveVisibilityRegion(
+    const RadialVisibilityRegion &region,
+    const std::string &file,
+    std::stringstream *info
+) {
+    std::ofstream fs(file);
+    if (!fs.is_open()) {
+        if (info) *info << "Cannot open file " << file << " for writing.\n";
+        return false;
+    }
+
+    return false;
+}
+
+std::optional<trivis::RadialVisibilityRegion> data_loading::LoadVisibilityRegion(
+    const std::string &file,
+    std::stringstream *info
+) {
+    std::ifstream fs(file);
+    if (!fs.is_open()) {
+        if (info) *info << "Cannot open file " << file << " for reading.\n";
+        return std::nullopt;
+    }
+}

@@ -11,12 +11,13 @@
 #define TRIVIS_PLUS_DATA_LOADING_LOAD_MESH_H_
 
 #include <string>
+#include <sstream>
+#include <optional>
 
 #include "trivis/geom/geom_types.h"
 #include "trivis/mesh/tri_mesh.h"
 
 namespace trivis_plus::data_loading {
-
 
 bool SaveTriMesh(
     const trivis::mesh::TriMesh &mesh,

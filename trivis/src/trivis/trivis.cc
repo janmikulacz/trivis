@@ -77,7 +77,7 @@ void Trivis::FillPointLocationBuckets(
 ) {
     assert(_has_mesh);
     if (!max_avg_triangle_count_in_bucket) {
-        _pl.Init(_limits, _triangles, bucket_size.value_or(DefaultParam::pl_bucket_size));
+        _pl.Init(_limits, _triangles, bucket_size.value_or(DefaultParam::kPointLocationBucketSize));
         _has_pl = true;
         return;
     }
@@ -109,7 +109,7 @@ void Trivis::InitPointLocation(
 ) {
     assert(_has_mesh);
     FillPointLocationBuckets(bucket_size, max_avg_triangle_count_in_bucket);
-    if (optimize_bucket_triangles.value_or(DefaultParam::pl_optimize_bucket_triangles)) {
+    if (optimize_bucket_triangles.value_or(DefaultParam::kPointLocationOptimizeBucketTriangles)) {
         OptimizePointLocationBucketTriangles();
     }
 }
@@ -118,8 +118,8 @@ void Trivis::SetPointLocationEpsilons(
     const std::optional<std::vector<double>> &eps1_seq,
     std::optional<double> eps2_squared
 ) {
-    _pl_eps1_seq = eps1_seq.value_or(std::vector<double>{DefaultParam::pl_eps1.begin(), DefaultParam::pl_eps1.end()});
-    _pl_eps2_squared = eps2_squared.value_or(DefaultParam::pl_eps2_squared);
+    _pl_eps1_seq = eps1_seq.value_or(std::vector<double>{DefaultParam::kPointLocationEpsilon1.begin(), DefaultParam::kPointLocationEpsilon1.end()});
+    _pl_eps2_squared = eps2_squared.value_or(DefaultParam::kPointLocationEpsilon2Squared);
 }
 
 void Trivis::Init(
@@ -132,12 +132,13 @@ void Trivis::Init(
 ) {
     SetMap(std::move(map));
     ConstructMeshCDT();
-    InitPointLocation(pl_bucket_size, pl_max_avg_triangle_count_in_bucket, pl_optimize_bucket_triangles.value_or(DefaultParam::pl_optimize_bucket_triangles));
+    InitPointLocation(pl_bucket_size, pl_max_avg_triangle_count_in_bucket, pl_optimize_bucket_triangles.value_or(DefaultParam::kPointLocationOptimizeBucketTriangles));
     SetPointLocationEpsilons(pl_eps1_seq, pl_eps2_squared);
 }
 
 void Trivis::Init(
-    mesh::TriMesh mesh, std::optional<geom::PolyMap> map,
+    mesh::TriMesh mesh,
+    std::optional<geom::PolyMap> map,
     std::optional<double> pl_bucket_size,
     std::optional<double> pl_max_avg_triangle_count_in_bucket,
     std::optional<bool> pl_optimize_bucket_triangles,
@@ -145,7 +146,7 @@ void Trivis::Init(
     std::optional<double> pl_eps2_squared
 ) {
     SetMesh(std::move(mesh), std::move(map));
-    InitPointLocation(pl_bucket_size, pl_max_avg_triangle_count_in_bucket, pl_optimize_bucket_triangles.value_or(DefaultParam::pl_optimize_bucket_triangles));
+    InitPointLocation(pl_bucket_size, pl_max_avg_triangle_count_in_bucket, pl_optimize_bucket_triangles.value_or(DefaultParam::kPointLocationOptimizeBucketTriangles));
     SetPointLocationEpsilons(pl_eps1_seq, pl_eps2_squared);
 }
 
@@ -172,11 +173,11 @@ std::optional<Trivis::PointLocationResult> Trivis::LocatePoint(
         if (q.SquaredDistanceTo(v_p) <= eps2_squared_final) {
             result.snap_to_vertices.push_back(ver_id);
             if (q == v_p) {
-                auto next_vertex = _mesh.vertices[ver_id].next_wi_vertex;
+                auto next_vertex = _mesh.vertices[ver_id].next_weak_intersect_ver;
                 if (next_vertex) {
                     while (next_vertex != ver_id) {
                         result.snap_to_vertices.push_back(*next_vertex);
-                        next_vertex = _mesh.vertices[*next_vertex].next_wi_vertex;
+                        next_vertex = _mesh.vertices[*next_vertex].next_weak_intersect_ver;
                     }
                 }
             }

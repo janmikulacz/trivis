@@ -110,7 +110,7 @@ void mesh::SplitWeaklyIntersectingNodes(TriMesh &mesh) {
         }
         // Save split partners.
         for (int i_prev = static_cast<int>(new_nodes_ids.size()) - 1, i = 0; i < new_nodes_ids.size(); i_prev = i++) {
-            nodes[new_nodes_ids[i_prev]].next_wi_vertex = new_nodes_ids[i];
+            nodes[new_nodes_ids[i_prev]].next_weak_intersect_ver = new_nodes_ids[i];
         }
     }
 }

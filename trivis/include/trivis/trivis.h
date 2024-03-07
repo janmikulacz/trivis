@@ -34,10 +34,10 @@ public:
     /// ##### STRUCTURES ##### ///
 
     struct DefaultParam {
-        static constexpr double pl_bucket_size = 1.0;
-        static constexpr bool pl_optimize_bucket_triangles = false;
-        static constexpr std::array<double, 10> pl_eps1 = {1e-18, 1e-17, 1e-16, 1e-15, 1e-14, 1e-13, 1e-12, 1e-11, 1e-10, 1e-9};
-        static constexpr double pl_eps2_squared = 1e-12 * 1e-12;
+        static constexpr double kPointLocationBucketSize = 1.0;
+        static constexpr bool kPointLocationOptimizeBucketTriangles = false;
+        static constexpr std::array<double, 10> kPointLocationEpsilon1 = {1e-18, 1e-17, 1e-16, 1e-15, 1e-14, 1e-13, 1e-12, 1e-11, 1e-10, 1e-9};
+        static constexpr double kPointLocationEpsilon2Squared = 1e-12 * 1e-12;
     };
 
     struct ExpansionStats {
@@ -466,8 +466,8 @@ private:
     mesh::TriMesh _mesh;
     geom::FPolygons _triangles;
     pl::PointLocation _pl;
-    std::vector<double> _pl_eps1_seq{DefaultParam::pl_eps1.begin(), DefaultParam::pl_eps1.end()};
-    double _pl_eps2_squared = DefaultParam::pl_eps2_squared;
+    std::vector<double> _pl_eps1_seq{DefaultParam::kPointLocationEpsilon1.begin(), DefaultParam::kPointLocationEpsilon1.end()};
+    double _pl_eps2_squared = DefaultParam::kPointLocationEpsilon2Squared;
 
     /// ##### EXPAND EDGE: INTERSECTION OF RAY AND OBSTACLE ##### ///
 

@@ -18,7 +18,7 @@
 namespace trivis::mesh {
 
 struct TriVertex {
-    std::optional<int> next_wi_vertex = std::nullopt;
+    std::optional<int> next_weak_intersect_ver = std::nullopt;
     geom::FPoint point;
     std::vector<int> edges;
     std::vector<int> triangles;
@@ -103,7 +103,7 @@ inline void Preorder(
 geom::FPolygons Mesh2Polygons(const TriMesh &mesh);
 
 inline bool operator==(const TriVertex &v0, const TriVertex &v1) {
-    return v0.point == v1.point && v0.edges == v1.edges && v0.triangles == v1.triangles && v0.next_wi_vertex == v1.next_wi_vertex;
+    return v0.point == v1.point && v0.edges == v1.edges && v0.triangles == v1.triangles && v0.next_weak_intersect_ver == v1.next_weak_intersect_ver;
 }
 
 inline bool operator!=(const TriVertex &v0, const TriVertex &v1) {

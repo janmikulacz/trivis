@@ -11,11 +11,24 @@
 #define TRIVIS_PLUS_DATA_LOADING_LOAD_MAP_H_
 
 #include <string>
+#include <sstream>
 #include <optional>
 
 #include "trivis/geom/poly_map.h"
 
 namespace trivis_plus::data_loading {
+
+bool SavePolyMap(
+    const trivis::geom::PolyMap &poly_map,
+    const std::string &file,
+    std::stringstream *info = nullptr
+);
+
+std::optional<trivis::geom::PolyMap> LoadPolyMap(
+    const std::string &file,
+    std::optional<double> rescale = std::nullopt,
+    std::stringstream *info = nullptr
+);
 
 /**
  *
@@ -50,13 +63,13 @@ namespace trivis_plus::data_loading {
  * @param scale
  * @return
  */
-bool LoadPolyMap(
+[[deprecated]] bool LoadPolyMap(
     const std::string &file,
     trivis::geom::PolyMap &poly_map,
     std::optional<double> scale = std::nullopt
 ) noexcept(false);
 
-std::string LoadPolyMapSafely(
+[[deprecated]] std::string LoadPolyMapSafely(
     const std::string &file,
     trivis::geom::PolyMap &poly_map,
     std::optional<double> scale = std::nullopt

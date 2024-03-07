@@ -252,3 +252,19 @@ std::string data_loading::LoadPolyMapSafely(
     }
     return "ok";
 }
+
+bool data_loading::SavePolyMap(
+    const PolyMap &poly_map,
+    const std::string &file,
+    std::stringstream *info
+) {
+    return false;
+}
+
+std::optional<trivis::geom::PolyMap> data_loading::LoadPolyMap(
+    const std::string &file,
+    std::optional<double> rescale,
+    std::stringstream *info
+) {
+    return std::nullopt;
+}
