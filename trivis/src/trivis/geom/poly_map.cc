@@ -59,7 +59,7 @@ FPoints PolyMap::ToPoints() const {
     return ret;
 }
 
-FPolygons SimplifyWeaklySimplePolygon(
+FPolygons SimplifyWeaklySelfIntersectingPolygon(
     const FPolygon &polygon
 ) {
     std::map<std::pair<double, double>, int> unique_points;
@@ -71,7 +71,7 @@ FPolygons SimplifyWeaklySimplePolygon(
             FPolygon remaining_polygon(polygon.begin(), polygon.begin() + it->second);
             FPolygon simple_polygon(polygon.begin() + it->second, polygon.begin() + i);
             remaining_polygon.insert(remaining_polygon.end(), polygon.begin() + i, polygon.end());
-            FPolygons ret = SimplifyWeaklySimplePolygon(remaining_polygon);
+            FPolygons ret = SimplifyWeaklySelfIntersectingPolygon(remaining_polygon);
             ret.push_back(simple_polygon);
             return ret;
         }
@@ -80,8 +80,8 @@ FPolygons SimplifyWeaklySimplePolygon(
     return {polygon};
 }
 
-void PolyMap::SimplifyWeaklySimplePolygons() {
-    auto ret = SimplifyWeaklySimplePolygon(_border);
+void PolyMap::SimplifyWeaklySelfIntersectingPolygons() {
+    auto ret = SimplifyWeaklySelfIntersectingPolygon(_border);
     _border = std::move(ret[0]);
     FPolygons new_holes;
     for (int k = 1; k < ret.size(); ++k) {
@@ -90,7 +90,7 @@ void PolyMap::SimplifyWeaklySimplePolygons() {
         }
     }
     for (const auto &hole: _holes) {
-        ret = SimplifyWeaklySimplePolygon(hole);
+        ret = SimplifyWeaklySelfIntersectingPolygon(hole);
         for (auto &new_hole: ret) {
             if (OrientationClockwise(new_hole)) {
                 new_holes.push_back(std::move(new_hole));

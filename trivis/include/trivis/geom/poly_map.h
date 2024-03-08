@@ -70,7 +70,7 @@ public:
 
     void ShiftToOrigin();
 
-    void SimplifyWeaklySimplePolygons();
+    void SimplifyWeaklySelfIntersectingPolygons();
 
     [[nodiscard]] FPoints ToPoints() const;
 

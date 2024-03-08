@@ -8,7 +8,6 @@
  */
 
 #include <iomanip>
-#include <optional>
 
 // === BOOST INCLUDES ===
 
@@ -56,9 +55,9 @@ struct ProgramOptionVariables {
     std::string output_dir = DEFAULT_OUT_DIR;
     double map_scale = 0.01;
     double bucket_size = 1.0;
-    double vis_radius = -1.0;
-    int n_points = 100;
-    int random_seed = 42;
+    double x = 10.315;
+    double y = 11.620;
+    double vis_radius = 9.5;
 };
 
 void AddProgramOptions(
@@ -97,15 +96,15 @@ void AddProgramOptions(
         ("bucket-size",
          po::value(&pov.bucket_size)->default_value(pov.bucket_size),
          "Size of the buckets used for locating a point in the triangular mesh.")
+        ("x",
+         po::value(&pov.x)->default_value(pov.x),
+         "X coordinate of the query point.")
+        ("y",
+         po::value(&pov.y)->default_value(pov.y),
+         "Y coordinate of the query point.")
         ("vis-radius",
          po::value(&pov.vis_radius)->default_value(pov.vis_radius),
-         "Limited visibility radius (-1 ~ infinite).")
-        ("n-points",
-         po::value(&pov.n_points)->default_value(pov.n_points),
-         "The number of points.")
-        ("random-seed",
-         po::value(&pov.random_seed)->default_value(pov.random_seed),
-         "Random seed for generating the points.");
+         "Limited visibility radius (-1 ~ infinite).");
 }
 
 trivis_plus::utils::severity_level GetSeverity(const ProgramOptionVariables &pov) {
@@ -186,11 +185,11 @@ int MainBody(const ProgramOptionVariables &pov) {
 
     trivis::utils::SimpleClock clock;
 
-    LOGF_INF(">> Initializing TriVis.");
+    LOGF_INF(">> Initializing Trivis.");
     clock.Restart();
-    // Create and initialize the TriVis object.
+    // Create and initialize the Trivis object.
     trivis::Trivis vis;
-    {   // Load map from file and move it to TriVis (without copying).
+    {   // Load map from file and move it to Trivis (without copying).
         trivis::geom::PolyMap map;
         std::string load_msg = trivis_plus::data_loading::LoadPolyMapSafely(pov.map_dir + "/" + pov.map_name + pov.map_extension, map, pov.map_scale);
         if (load_msg != "ok") {
@@ -201,10 +200,10 @@ int MainBody(const ProgramOptionVariables &pov) {
         // Warning: order of the following matters!
         map.ShiftToOrigin(); // Subtracts min X and Y coordinates from all points.
         map.RemoveDuplicatePoints(); // Removes all consecutive identical points.
-        map.SimplifyWeaklySimplePolygons(); // Splits all weakly simple polygons to multiple (touching) strongly simple polygons.
+        map.SimplifyWeaklySelfIntersectingPolygons(); // Splits all weakly simple polygons to multiple (touching) strongly simple polygons.
         map.RemoveCollinearPoints(); // Removes all consecutive collinear points.
         // ==================================================
-        vis.SetMap(std::move(map)); // Set the map to TriVis instance.
+        vis.SetMap(std::move(map)); // Set the map to Trivis instance.
         // cannot use map anymore ! (it was moved)
     }
     vis.ConstructMeshCDT();
@@ -215,56 +214,28 @@ int MainBody(const ProgramOptionVariables &pov) {
     const auto &lim = vis.limits();
     LOGF_INF("Map limits [ MIN: " << lim.x_min << ", " << lim.y_min << " | MAX: " << lim.x_max << ", " << lim.y_max << " ].");
 
-    int n_nodes = static_cast<int>(vis.mesh().vertices.size());
-    int n_points = pov.n_points;
-    LOGF_INF("Precomputing " << n_points << " random points.");
-    trivis::geom::FPoints points;
-    { // Compute random points.
-        std::vector<double> accum_areas;
-        auto rng = std::mt19937(pov.random_seed);
-        points.reserve(n_points);
-        for (int i = 0; i < n_points; ++i) {
-            points.push_back(trivis::utils::UniformRandomPointInRandomTriangle(vis.triangles(), accum_areas, rng));
-        }
-    }
-
-    // Get node points.
-    trivis::geom::FPoints node_points(n_nodes);
-    for (int node_id = 0; node_id < vis.mesh().vertices.size(); ++node_id) {
-        node_points[node_id] = vis.mesh().point(node_id);
-    }
-
+    // Determine visibility.
+    clock.Restart();
     auto vis_radius_opt = pov.vis_radius > 0.0 ? std::make_optional(pov.vis_radius) : std::nullopt;
-
-    // Compute Visibility Graph: NODE X NODE
-    clock.Restart();
-    LOGF_INF(">> Computing visibility graph: node x node.");
-    auto vis_graph_bool_node_node_opt = vis.VertexVertexVisibilityGraphBool(nullptr, vis_radius_opt);
-    LOGF_INF("<< DONE. It took " << clock.TimeInSeconds() << " seconds.");
-
-    // Compute Visibility Graph: POINT X NODE
-    clock.Restart();
-    LOGF_INF(">> Computing visibility graph: point x node.");
-    std::vector<std::optional<trivis::Trivis::PointLocationResult>> points_locations;
-    points_locations.reserve(points.size());
-    for (const auto &p: points) {
-        points_locations.push_back(vis.LocatePoint(p));
+    auto q = trivis::geom::MakePoint(pov.x, pov.y);
+    LOGF_INF(">> Computing map vertices visible from " << q << ".");
+    std::optional<trivis::Trivis::PointLocationResult> q_location_opt = vis.LocatePoint(q);
+    if (!q_location_opt) {
+        LOGF_FTL("Query point is outside of the map!");
+        return EXIT_FAILURE;
     }
-    auto vis_graph_bool_point_node_opt = vis.VertexPointVisibilityGraphBool(points, points_locations, nullptr, vis_radius_opt);
-    LOGF_INF("<< DONE. It took " << clock.TimeInSeconds() << " seconds.");
-
-    // Compute Visibility Graph: POINT X POINT
-    clock.Restart();
-    LOGF_INF(">> Computing visibility graph: point x point.");
-    auto vis_graph_bool_point_point_opt = vis.PointPointVisibilityGraphBool(points, points_locations, vis_radius_opt);
+    std::optional<std::vector<int>> visible_vertices_opt = vis.VisibleVertices(q, *q_location_opt, nullptr, vis_radius_opt);
+    if (!visible_vertices_opt) {
+        LOGF_FTL("Error while computing visibility.");
+        return EXIT_FAILURE;
+    }
     LOGF_INF("<< DONE. It took " << clock.TimeInSeconds() << " seconds.");
 
     // Draw the result.
     std::string pdf_file_str = pov.output_dir + "/";
-    pdf_file_str += "eg_vis_graph";
+    pdf_file_str += "eg_vis_map_vertices";
     pdf_file_str += "_" + pov.map_name;
-    pdf_file_str += "_n-" + std::to_string(pov.n_points);
-    pdf_file_str += "_r-" + std::to_string(pov.random_seed);
+    pdf_file_str += "_" + q.ToString("", "-", "");
     if (vis_radius_opt) {
         pdf_file_str += "_d-" + std::to_string(*vis_radius_opt);
     }
@@ -273,31 +244,13 @@ int MainBody(const ProgramOptionVariables &pov) {
     auto drawer = dr::MakeMapDrawer(vis.map());
     drawer.OpenPDF(pdf_file_str);
     dr::FancyDrawMap(drawer, vis);
-    for (int node_id1 = 0; node_id1 < n_nodes; ++node_id1) {
-        for (int node_id2 = node_id1 + 1; node_id2 < n_nodes; ++node_id2) {
-            if ((vis_graph_bool_node_node_opt)[node_id1][node_id2]) {
-                drawer.DrawLine(node_points[node_id1], node_points[node_id2], 0.05, dr::kColorRed);
-            }
-        }
+    for (int visible_node_id: *visible_vertices_opt) {
+        drawer.DrawLine(q, vis.mesh().point(visible_node_id), 0.1, dr::kColorLimeGreen);
     }
-    for (int point_id = 0; point_id < n_points; ++point_id) {
-        for (int node_id = 0; node_id < n_nodes; ++node_id) {
-            if ((vis_graph_bool_point_node_opt)[point_id][node_id]) {
-                drawer.DrawLine(points[point_id], node_points[node_id], 0.05, dr::kColorLime);
-            }
-        }
+    drawer.DrawPoint(q, 0.1, dr::kColorBlueViolet);
+    if (vis_radius_opt) {
+        drawer.DrawArc(q, *vis_radius_opt, 0.0, 2 * M_PI, 0.05, dr::kColorBlueViolet);
     }
-    for (int point_id1 = 0; point_id1 < n_points; ++point_id1) {
-        for (int point_id2 = point_id1 + 1; point_id2 < n_points; ++point_id2) {
-            if ((vis_graph_bool_point_point_opt)[point_id1][point_id2]) {
-                drawer.DrawLine(points[point_id1], points[point_id2], 0.05, dr::kColorBlue);
-            }
-        }
-    }
-    drawer.DrawPoints(points, 0.10, dr::kColorBlack);
-    drawer.DrawPoints(points, 0.05, dr::kColorBlue);
-    drawer.DrawPoints(node_points, 0.10, dr::kColorBlack);
-    drawer.DrawPoints(node_points, 0.05, dr::kColorRed);
     drawer.Close();
 
     LOGF_INF("BYE BYE WORLD!");

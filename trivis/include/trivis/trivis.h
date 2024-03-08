@@ -12,6 +12,7 @@
 
 #include "trivis/geom/poly_map.h"
 #include "trivis/vis_regions.h"
+#include "trivis/utils/simple_clock.h"
 
 #include "trivis/mesh/tri_mesh.h"
 

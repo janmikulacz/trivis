@@ -201,7 +201,7 @@ int MainBody(const ProgramOptionVariables &pov) {
         // Warning: order of the following matters!
         map.ShiftToOrigin(); // Subtracts min X and Y coordinates from all points.
         map.RemoveDuplicatePoints(); // Removes all consecutive identical points.
-        map.SimplifyWeaklySimplePolygons(); // Splits all weakly simple polygons to multiple (touching) strongly simple polygons.
+        map.SimplifyWeaklySelfIntersectingPolygons(); // Splits all weakly simple polygons to multiple (touching) strongly simple polygons.
         map.RemoveCollinearPoints(); // Removes all consecutive collinear points.
         // ==================================================
         vis.SetMap(std::move(map)); // Set the map to Trivis instance.
