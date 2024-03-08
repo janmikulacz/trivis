@@ -15,67 +15,68 @@
 
 namespace trivis::utils {
 
-namespace time = std::chrono;
-using Clock = time::high_resolution_clock;
-using TimePoint = time::high_resolution_clock::time_point;
+using Clock = std::chrono::steady_clock;
+using TimePoint = Clock::time_point;
 
 class SimpleClock {
- public:
+public:
 
-  SimpleClock();
+    SimpleClock();
 
-  void Pause();
+    void Pause();
 
-  void Unpause();
+    void Unpause();
 
-  void Restart();
+    void Restart();
 
-  [[nodiscard]] double TimeInSeconds() const;
+    [[nodiscard]] double TimeInSeconds() const;
 
-  static TimePoint Now() noexcept;
+    static TimePoint Now() noexcept;
 
- private:
+private:
 
-  bool is_running_ = true;
-  double time_in_seconds_ = 0.0;
-  TimePoint start_;
+    bool _is_running = true;
+    double _time_in_seconds = 0.0;
+    TimePoint _start;
 
+    [[nodiscard]] long ElapsedInNanoSeconds() const;
 };
 
-inline SimpleClock::SimpleClock() : start_(Clock::now()) {
+inline SimpleClock::SimpleClock() : _start(Clock::now()) {
 
 }
 
 inline void SimpleClock::Pause() {
-  auto end = Clock::now();
-  time_in_seconds_ += static_cast<double>(time::duration_cast<time::nanoseconds>(end - start_).count()) * 1e-9;
-  is_running_ = false;
+    _time_in_seconds += static_cast<double>(ElapsedInNanoSeconds()) * 1e-9;
+    _is_running = false;
 }
 
 inline void SimpleClock::Unpause() {
-  start_ = Clock::now();
-  is_running_ = true;
+    _start = Clock::now();
+    _is_running = true;
 }
 
 inline void SimpleClock::Restart() {
-  time_in_seconds_ = 0.0;
-  start_ = Clock::now();
-  is_running_ = true;
+    _time_in_seconds = 0.0;
+    Unpause();
 }
 
 [[nodiscard]] inline double SimpleClock::TimeInSeconds() const {
-  auto end = Clock::now();
-  if (is_running_) {
-    return time_in_seconds_ +
-        static_cast<double>(time::duration_cast<time::nanoseconds>(end - start_).count()) * 1e-9;
-  } else {
-    return time_in_seconds_;
-  }
+    auto end = Clock::now();
+    if (_is_running) {
+        return _time_in_seconds + static_cast<double>(ElapsedInNanoSeconds()) * 1e-9;
+    } else {
+        return _time_in_seconds;
+    }
 }
 
 inline TimePoint SimpleClock::Now() noexcept {
-  return time::high_resolution_clock::now();
+    return Clock::now();
 }
+
+inline long SimpleClock::ElapsedInNanoSeconds() const {
+    return std::chrono::duration_cast<std::chrono::nanoseconds>(Clock::now() - _start).count();
+    }
 
 }
 
