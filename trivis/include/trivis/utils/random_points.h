@@ -35,10 +35,16 @@ namespace trivis::utils {
     int *triangle_id = nullptr
 );
 
-[[nodiscard]] inline geom::FPoint UniformRandomPointInRandomTriangle(
+[[nodiscard]] geom::FPoint UniformRandomPointInRandomTriangle(
     const geom::FPolygons &triangles,
     std::mt19937 &rng,
     int *triangle_id = nullptr
+);
+
+inline geom::FPoint UniformRandomPointInRandomTriangle(
+    const geom::FPolygons &triangles,
+    std::mt19937 &rng,
+    int *triangle_id
 ) {
     std::vector<double> accum_areas;
     return UniformRandomPointInRandomTriangle(triangles, accum_areas, rng, triangle_id);

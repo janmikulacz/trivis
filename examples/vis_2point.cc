@@ -1,5 +1,5 @@
 /**
- * File:   draw_visibility_region.cc
+ * File:   vis_2point.cc
  *
  * Date:   04.11.2022
  * Author: Jan Mikula
@@ -15,9 +15,7 @@
 
 #include "trivis/trivis.h"
 
-#include "trivis_plus/data_loading/load_map.h"
-#include "trivis_plus/drawing/fancy_drawing.h"
-#include "trivis_plus/utils/log.h"
+#include "trivis_plus/trivis_plus.h"
 
 #ifndef DEFAULT_MAP_DIR // May be defined in CMakeLists.txt.
 #define DEFAULT_MAP_DIR "."

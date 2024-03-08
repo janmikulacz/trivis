@@ -10,13 +10,25 @@
 #ifndef TRIVIS_TRIVIS_H_
 #define TRIVIS_TRIVIS_H_
 
+#include "trivis/geom/generic_geom_types.h"
+#include "trivis/geom/generic_geom_utils.h"
+#include "trivis/geom/geom_types.h"
 #include "trivis/geom/poly_map.h"
-#include "trivis/vis_regions.h"
-#include "trivis/utils/simple_clock.h"
+#include "trivis/geom/robust_geometry.h"
 
+#include "trivis/mesh/cdt.h"
 #include "trivis/mesh/tri_mesh.h"
 
+#include "trivis/pl/grid.h"
 #include "trivis/pl/point_location.h"
+
+#include "trivis/utils/clipper_geom.h"
+#include "trivis/utils/clipper_utils.h"
+#include "trivis/utils/generic_utils.h"
+#include "trivis/utils/random_points.h"
+#include "trivis/utils/simple_clock.h"
+
+#include "trivis/vis_regions.h"
 
 #include <memory>
 #include <utility>
