@@ -189,24 +189,26 @@ std::optional<Trivis::PointLocationResult> Trivis::LocatePoint(
 
 /// ##### VISIBILITY: INTERSECTION OF RAY AND OBSTACLE ##### ///
 
-Trivis::RayShootingResult Trivis::ShootRay(
+std::optional<Trivis::RayShootingResult> Trivis::ShootRay(
     const geom::FPoint &q,
     const PointLocationResult &q_location,
     const geom::FPoint &direction,
+    std::optional<double> radius,
     ExpansionStats *stats
 ) const {
     if (q_location.snap_to_vertices.empty()) {
-        return ShootRay(q, q_location.tri_id, direction, stats);
+        return ShootRay(q, q_location.tri_id, direction, radius, stats);
     } else {
         // FIXME: Choose the vertex based on the direction.
-        return ShootRay(q_location.snap_to_vertices.front(), direction, stats);
+        return ShootRay(q_location.snap_to_vertices.front(), direction, radius, stats);
     }
 }
 
-Trivis::RayShootingResult Trivis::ShootRay(
+std::optional<Trivis::RayShootingResult> Trivis::ShootRay(
     const geom::FPoint &q,
     int q_triangle_id,
     const geom::FPoint &direction,
+    std::optional<double> radius,
     ExpansionStats *stats
 ) const {
 
@@ -217,6 +219,9 @@ Trivis::RayShootingResult Trivis::ShootRay(
         stats->num_expansions = 0;
         stats->max_recursion_depth = 0;
     }
+
+    // Compute radius squared (or set to -1 in case it is not given).
+    double sq_radius = (radius && radius > 0.0) ? *radius * *radius : -1.0;
 
     const auto &q_triangle = _mesh.triangles[q_triangle_id];
 
@@ -258,16 +263,16 @@ Trivis::RayShootingResult Trivis::ShootRay(
                 }
                 return ret;
             }
-            return ExpandEdgeObstacleIntersection(1, q, distant_t, v_l_id, v_r_id, edge_id, edge_tri_id == 0 ? 1 : 0, stats);
+            return ExpandEdgeRayShooting(1, q, distant_t, v_l_id, v_r_id, edge_id, edge_tri_id == 0 ? 1 : 0, sq_radius, stats);
         }
     }
-    // FIXME: Raise an exception.
-    return {};
+    return std::nullopt;
 }
 
-Trivis::RayShootingResult Trivis::ShootRay(
+std::optional<Trivis::RayShootingResult> Trivis::ShootRay(
     int ver_id,
     const geom::FPoint &direction,
+    std::optional<double> radius,
     ExpansionStats *stats
 ) const {
 
@@ -278,11 +283,14 @@ Trivis::RayShootingResult Trivis::ShootRay(
         stats->max_recursion_depth = 0;
     }
 
+    // Compute radius squared (or set to -1 in case it is not given).
+    double sq_radius = (radius && radius > 0.0) ? *radius * *radius : -1.0;
+
     const auto &vertex = _mesh.vertices[ver_id];
     const auto &v_p = vertex.point;
 
     if (vertex.edges.empty() || vertex.triangles.empty()) {
-        return {};
+        return std::nullopt;
     }
 
     const double w = _limits.x_max - _limits.x_min;
@@ -336,13 +344,12 @@ Trivis::RayShootingResult Trivis::ShootRay(
                         }
                         return ret;
                     }
-                    return ExpandEdgeObstacleIntersection(1, v_p, distant_t, v_l_id, v_r_id, edge_id, edge_tri_id == 0 ? 1 : 0, stats);
+                    return ExpandEdgeRayShooting(1, v_p, distant_t, v_l_id, v_r_id, edge_id, edge_tri_id == 0 ? 1 : 0, sq_radius, stats);
                 }
             }
         }
     }
-    // FIXME: Raise an exception.
-    return {};
+    return std::nullopt;
 }
 
 /// ##### VISIBILITY: TWO-POINT QUERIES ##### ///
@@ -403,7 +410,7 @@ bool Trivis::IsVisible(
                 // target lies in the same triangle as query
                 return true;
             } else if (!edge.is_boundary()) {
-                return ExpandEdgeVisibilityBetween(1, q, p, v_l_id, v_r_id, edge_id, edge_tri_id == 0 ? 1 : 0, stats);
+                return ExpandEdge2PointVisibility(1, q, p, v_l_id, v_r_id, edge_id, edge_tri_id == 0 ? 1 : 0, stats);
             }
         }
     }
@@ -464,7 +471,7 @@ bool Trivis::IsVisible(
                         // target lies in the same triangle as query
                         return true;
                     } else if (!edge.is_boundary()) {
-                        return ExpandEdgeVisibilityBetween(1, v_p, p, v_l_id, v_r_id, edge_id, edge_tri_id == 0 ? 1 : 0, stats);
+                        return ExpandEdge2PointVisibility(1, v_p, p, v_l_id, v_r_id, edge_id, edge_tri_id == 0 ? 1 : 0, stats);
                     }
                 }
             }
@@ -1594,7 +1601,7 @@ RadialVisibilityRegion Trivis::ToRadialVisibilityRegion(
 
 /// ##### EXPAND EDGE: INTERSECTION OF RAY AND OBSTACLE ##### ///
 
-Trivis::RayShootingResult Trivis::ExpandEdgeObstacleIntersection(
+std::optional<Trivis::RayShootingResult> Trivis::ExpandEdgeRayShooting(
     int level,
     const geom::FPoint &q,
     const geom::FPoint &distant_t,
@@ -1602,6 +1609,7 @@ Trivis::RayShootingResult Trivis::ExpandEdgeObstacleIntersection(
     int rest_r_id,
     int curr_edge_id,
     int curr_edge_tri_id,
+    double sq_radius,
     ExpansionStats *stats
 ) const {
 
@@ -1611,6 +1619,11 @@ Trivis::RayShootingResult Trivis::ExpandEdgeObstacleIntersection(
     }
 
     const auto &edge = _mesh.edges[curr_edge_id];
+    bool too_far_away = sq_radius >= 0.0 && PointSegmentSquaredDistance(q, _mesh.point(edge.vertices[0]), _mesh.point(edge.vertices[1])) > sq_radius;
+    if (too_far_away) {
+        return std::nullopt;
+    }
+
     const auto &rest_l_p = _mesh.point(rest_l_id);
     const auto &rest_r_p = _mesh.point(rest_r_id);
     int tri_id = edge.triangles[curr_edge_tri_id];
@@ -1628,6 +1641,9 @@ Trivis::RayShootingResult Trivis::ExpandEdgeObstacleIntersection(
         if (edge_l.is_boundary()) {
             Trivis::RayShootingResult ret;
             ret.code = RaySegmentIntersection(q, distant_t, rest_l_p, opp, ret.p, ret.p2);
+            if (q.SquaredDistanceTo(ret.p) > sq_radius) {
+                return std::nullopt;
+            }
             if (ret.code == '0' || ret.code == 'c' || ret.code == 'e') {
                 return ret;
             }
@@ -1645,11 +1661,14 @@ Trivis::RayShootingResult Trivis::ExpandEdgeObstacleIntersection(
             return ret;
         }
         // expand left edge
-        return ExpandEdgeObstacleIntersection(level + 1, q, distant_t, rest_l_id, opp_id, edge_l_id, edge_l.triangles[0] == tri_id ? 1 : 0, stats);
+        return ExpandEdgeRayShooting(level + 1, q, distant_t, rest_l_id, opp_id, edge_l_id, edge_l.triangles[0] == tri_id ? 1 : 0, sq_radius, stats);
     } else { // tp must be in the right cone.
         if (edge_r.is_boundary()) {
             Trivis::RayShootingResult ret;
             ret.code = RaySegmentIntersection(q, distant_t, opp, rest_r_p, ret.p, ret.p2);
+            if (q.SquaredDistanceTo(ret.p) > sq_radius) {
+                return std::nullopt;
+            }
             if (ret.code == '0' || ret.code == 'c' || ret.code == 'e') {
                 return ret;
             }
@@ -1667,16 +1686,16 @@ Trivis::RayShootingResult Trivis::ExpandEdgeObstacleIntersection(
             return ret;
         }
         // expand right edge
-        return ExpandEdgeObstacleIntersection(level + 1, q, distant_t, opp_id, rest_r_id, edge_r_id, edge_r.triangles[0] == tri_id ? 1 : 0, stats);
+        return ExpandEdgeRayShooting(level + 1, q, distant_t, opp_id, rest_r_id, edge_r_id, edge_r.triangles[0] == tri_id ? 1 : 0, sq_radius, stats);
     }
 }
 
 /// ##### EXPAND EDGE: TWO-POINT QUERIES ##### ///
 
-bool Trivis::ExpandEdgeVisibilityBetween(
+bool Trivis::ExpandEdge2PointVisibility(
     int level,
-    const FPoint &q,
-    const FPoint &t,
+    const geom::FPoint &q,
+    const geom::FPoint &t,
     int rest_l_id,
     int rest_r_id,
     int curr_edge_id,
@@ -1709,10 +1728,10 @@ bool Trivis::ExpandEdgeVisibilityBetween(
             return true;
         } else if (!edge_l.is_boundary()) {
             // expand left edge
-            return ExpandEdgeVisibilityBetween(level + 1, q, t, rest_l_id, opp_id, edge_l_id, edge_l.triangles[0] == tri_id ? 1 : 0, stats);
+            return ExpandEdge2PointVisibility(level + 1, q, t, rest_l_id, opp_id, edge_l_id, edge_l.triangles[0] == tri_id ? 1 : 0, stats);
         } else if (!edge_r.is_boundary() && IsPointInCone(t, opp, q, rest_r_p) && TurnsRight(q, opp, rest_r_p)) {
             // if the left is obstacle but the right is not and p1 is in both cones, then expand right edge
-            return ExpandEdgeVisibilityBetween(level + 1, q, t, opp_id, rest_r_id, edge_r_id, edge_r.triangles[0] == tri_id ? 1 : 0, stats);
+            return ExpandEdge2PointVisibility(level + 1, q, t, opp_id, rest_r_id, edge_r_id, edge_r.triangles[0] == tri_id ? 1 : 0, stats);
         } else {
             return false;
         }
@@ -1722,7 +1741,7 @@ bool Trivis::ExpandEdgeVisibilityBetween(
             return true;
         } else if (!edge_r.is_boundary()) {
             // expand right edge
-            return ExpandEdgeVisibilityBetween(level + 1, q, t, opp_id, rest_r_id, edge_r_id, edge_r.triangles[0] == tri_id ? 1 : 0, stats);
+            return ExpandEdge2PointVisibility(level + 1, q, t, opp_id, rest_r_id, edge_r_id, edge_r.triangles[0] == tri_id ? 1 : 0, stats);
         } else {
             return false;
         }

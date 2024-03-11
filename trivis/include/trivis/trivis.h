@@ -247,23 +247,26 @@ public:
 
     /// ##### VISIBILITY: INTERSECTION OF RAY AND OBSTACLE ##### ///
 
-    RayShootingResult ShootRay(
+    std::optional<RayShootingResult> ShootRay(
         const geom::FPoint &q,
         const PointLocationResult &q_location,
         const geom::FPoint &direction,
+        std::optional<double> radius = std::nullopt,
         ExpansionStats *stats = nullptr
     ) const;
 
-    RayShootingResult ShootRay(
+    std::optional<RayShootingResult> ShootRay(
         const geom::FPoint &q,
         int q_triangle_id,
         const geom::FPoint &direction,
+        std::optional<double> radius = std::nullopt,
         ExpansionStats *stats = nullptr
     ) const;
 
-    RayShootingResult ShootRay(
+    std::optional<RayShootingResult> ShootRay(
         int ver_id,
         const geom::FPoint &direction,
+        std::optional<double> radius = std::nullopt,
         ExpansionStats *stats = nullptr
     ) const;
 
@@ -482,22 +485,9 @@ private:
     std::vector<double> _pl_eps1_seq{DefaultParam::kPointLocationEpsilon1.begin(), DefaultParam::kPointLocationEpsilon1.end()};
     double _pl_eps2_squared = DefaultParam::kPointLocationEpsilon2Squared;
 
-    /// ##### EXPAND EDGE: INTERSECTION OF RAY AND OBSTACLE ##### ///
-
-    [[nodiscard]] RayShootingResult ExpandEdgeObstacleIntersection(
-        int level,
-        const geom::FPoint &q,
-        const geom::FPoint &distant_t,
-        int rest_l_id,
-        int rest_r_id,
-        int curr_edge_id,
-        int curr_edge_tri_id,
-        ExpansionStats *stats = nullptr
-    ) const;
-
     /// ##### EXPAND EDGE: TWO-POINT QUERIES ##### ///
 
-    [[nodiscard]] bool ExpandEdgeVisibilityBetween(
+    [[nodiscard]] bool ExpandEdge2PointVisibility(
         int level,
         const geom::FPoint &q,
         const geom::FPoint &t,
@@ -505,6 +495,20 @@ private:
         int rest_r_id,
         int curr_edge_id,
         int curr_edge_tri_id,
+        ExpansionStats *stats = nullptr
+    ) const;
+
+    /// ##### EXPAND EDGE: INTERSECTION OF RAY AND OBSTACLE ##### ///
+
+    [[nodiscard]] std::optional<RayShootingResult> ExpandEdgeRayShooting(
+        int level,
+        const geom::FPoint &q,
+        const geom::FPoint &distant_t,
+        int rest_l_id,
+        int rest_r_id,
+        int curr_edge_id,
+        int curr_edge_tri_id,
+        double sq_radius,
         ExpansionStats *stats = nullptr
     ) const;
 

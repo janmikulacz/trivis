@@ -214,12 +214,12 @@ int MainBody(const ProgramOptionVariables &pov) {
     } else {
         if (pov.shoot_ray) {
             LOGF_INF("Shooting a ray from " << source << " in the direction of " << target << ".");
-            auto ray_shooting_result = vis.ShootRay(source, source_pl.value(), direction);
-            ray_intersection = ray_shooting_result.p;
-            if (vis_radius && ray_intersection->DistanceTo(source) > vis_radius.value()) {
-                visible = false;
-            } else {
+            auto ray_shooting_result = vis.ShootRay(source, source_pl.value(), direction, vis_radius);
+            if (ray_shooting_result) {
+                ray_intersection = ray_shooting_result->p;
                 visible = true;
+            } else {
+                visible = false;
             }
             LOGF_INF("DONE. It took " << clock.TimeInSeconds() << " seconds.");
         } else {
@@ -255,11 +255,28 @@ int MainBody(const ProgramOptionVariables &pov) {
     drawer.OpenPDF(pdf_file_str);
     drawer.DrawMap();
     if (is_source_inside) {
-        auto color_line = visible ? dr::kColorLimeGreen : dr::kColorRed;
-        if (ray_intersection) {
-            drawer.DrawLine(source, ray_intersection.value(), 0.2, color_line, 0.5);
+        if (pov.shoot_ray) {
+            if (ray_intersection) {
+                drawer.DrawLine(source, ray_intersection.value(), 0.2, dr::kColorLimeGreen, 0.5);
+            } else {
+                if (vis_radius) {
+                    drawer.DrawLine(source, source + direction * vis_radius.value(), 0.2, dr::kColorLimeGreen, 0.5);
+                    drawer.DrawLine(source + direction * vis_radius.value(), source + direction * 1e4, 0.2, dr::kColorRed, 0.5);
+                } else {
+                    drawer.DrawLine(source, source + direction * 1e4, 0.2, dr::kColorRed, 0.5);
+                }
+            }
         } else {
-            drawer.DrawLine(source, target, 0.2, color_line, 0.5);
+            if (visible) {
+                drawer.DrawLine(source, target, 0.2, dr::kColorLimeGreen, 0.5);
+            } else {
+                if (vis_radius) {
+                    drawer.DrawLine(source, source + direction * vis_radius.value(), 0.2, dr::kColorLimeGreen, 0.5);
+                    drawer.DrawLine(source + direction * vis_radius.value(), target, 0.2, dr::kColorRed, 0.5);
+                } else {
+                    drawer.DrawLine(source, target, 0.2, dr::kColorRed, 0.5);
+                }
+            }
         }
     }
     if (vis_radius) {
