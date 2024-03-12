@@ -896,7 +896,7 @@ std::vector<std::vector<bool>> Trivis::VertexVertexVisibilityGraphBool(
     return ret;
 }
 
-std::vector<std::vector<int>> Trivis::VertexPointVisibilityGraph(
+std::vector<std::vector<int>> Trivis::PointVertexVisibilityGraph(
     const geom::FPoints &points,
     const std::vector<std::optional<PointLocationResult>> &points_locations,
     const std::vector<bool> *tabu_vertices,

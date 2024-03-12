@@ -104,15 +104,23 @@ The example project loads maps from simple TXT files with the following structur
 ## Example Notes
 
 ```bash
+# Play with the 2-point/ray-shooting example:
 ./build-Release/examples/vis_2point 
 ./build-Release/examples/vis_2point --vis-radius 10
 ./build-Release/examples/vis_2point --shoot-ray
 ./build-Release/examples/vis_2point --help # to see all options
-
+# Play with the visible vertices example:
 ./build-Release/examples/vis_vertices
 ./build-Release/examples/vis_vertices --reflex-only
 ./build-Release/examples/vis_vertices --vis-radius 6
 ./build-Release/examples/vis_vertices --help # to see all options
+# Play with the visibility graph example:
+./build-Release/examples/vis_graph
+./build-Release/examples/vis_graph --reflex-only
+./build-Release/examples/vis_graph --reflex-only --vis-radius 6
+./build-Release/examples/vis_graph --point-vertex --reflex-only --vis-radius 6
+./build-Release/examples/vis_graph --point-point
+./build-Release/examples/vis_graph --help # to see all options
 ```
 
 ## Troubleshooting
