@@ -13,10 +13,46 @@
 #include <iostream>
 
 #include "trivis/geom/robust_geometry.h"
+#include "trivis/geom/generic_geom_utils.h"
 
 using namespace trivis;
 using namespace trivis::geom;
 using namespace trivis::mesh;
+
+std::vector<int> mesh::GetNeighborVertices(
+    const TriMesh &mesh,
+    int ver_id
+) {
+    const auto &ver = mesh.vertices[ver_id];
+    std::vector<int> neighbors;
+    for (int edge_id: ver.edges) {
+        const auto &edge = mesh.edges[edge_id];
+        if (edge.is_boundary()) {
+            neighbors.push_back(edge.vertices[edge.vertices[0] == ver_id ? 1 : 0]);
+        }
+    }
+    return neighbors;
+}
+
+bool mesh::IsReflex(
+    const TriMesh &mesh,
+    int ver_id_prev,
+    int ver_id,
+    int ver_id_next,
+    double reflex_tolerance
+) {
+    bool is_reflex = geom::TurnsLeft(mesh.point(ver_id_prev), mesh.point(ver_id), mesh.point(ver_id_next));
+    if (!is_reflex) {
+        return false;
+    }
+    if (reflex_tolerance > 0.0) {
+        double angle = geom::MinimalTurningAngleAbs(mesh.point(ver_id_prev), mesh.point(ver_id), mesh.point(ver_id_next));
+        if (angle < reflex_tolerance) {
+            return false;
+        }
+    }
+    return true;
+}
 
 void mesh::OrderEdgesInTrianglesCCW(TriMesh &mesh) {
     const auto &edges = mesh.edges;

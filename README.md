@@ -105,9 +105,14 @@ The example project loads maps from simple TXT files with the following structur
 
 ```bash
 ./build-Release/examples/vis_2point 
-./build-Release/examples/vis_2point --vis-radius 20
+./build-Release/examples/vis_2point --vis-radius 10
 ./build-Release/examples/vis_2point --shoot-ray
 ./build-Release/examples/vis_2point --help # to see all options
+
+./build-Release/examples/vis_vertices
+./build-Release/examples/vis_vertices --reflex-only
+./build-Release/examples/vis_vertices --vis-radius 6
+./build-Release/examples/vis_vertices --help # to see all options
 ```
 
 ## Troubleshooting

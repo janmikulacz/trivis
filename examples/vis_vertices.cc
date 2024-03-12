@@ -1,5 +1,5 @@
 /**
- * File:   vis_2point.cc
+ * File:   vis_vertices.cc
  *
  * Date:   04.11.2022
  * Author: Jan Mikula
@@ -40,12 +40,11 @@ struct ProgramOptionVariables {
     std::string map_full_path;
     std::string output_dir = DEFAULT_OUT_DIR;
     double map_scale = 0.01;
-    bool shoot_ray = false;
-    double x = 1.0;
-    double y = 15.0;
-    double tx = 19.0;
-    double ty = 3.0;
+    double x = 10.0;
+    double y = 10.0;
     double vis_radius = -1.0;
+    bool reflex_only = false;
+    bool convex_only = false;
 };
 
 void AddProgramOptions(
@@ -75,24 +74,21 @@ void AddProgramOptions(
         ("map-scale",
          po::value(&pov.map_scale)->default_value(pov.map_scale),
          "Map coordinates are scaled by this factor when loading the map.")
-        ("shoot-ray",
-         po::bool_switch(&pov.shoot_ray)->default_value(pov.shoot_ray),
-         "Shoot a ray from the source in the direction of the target.")
         ("x",
          po::value(&pov.x)->default_value(pov.x),
-         "X coordinate of the source.")
+         "X coordinate of the query.")
         ("y",
          po::value(&pov.y)->default_value(pov.y),
-         "Y coordinate of the source.")
-        ("tx",
-         po::value(&pov.tx)->default_value(pov.tx),
-         "X coordinate of the target.")
-        ("ty",
-         po::value(&pov.ty)->default_value(pov.ty),
-         "Y coordinate of the target.")
+         "Y coordinate of the query.")
         ("vis-radius",
          po::value(&pov.vis_radius)->default_value(pov.vis_radius),
-         "Limited visibility radius (-1 ~ infinite).");
+         "Limited visibility radius (-1 ~ infinite).")
+        ("reflex-only",
+         po::bool_switch(&pov.reflex_only)->default_value(pov.reflex_only),
+         "Consider only reflex (non-convex) vertices.")
+        ("convex-only",
+         po::bool_switch(&pov.convex_only)->default_value(pov.convex_only),
+         "Consider only convex (non-reflex) vertices.");
 }
 
 /**
@@ -167,7 +163,12 @@ char ParseProgramOptions(
  */
 int MainBody(const ProgramOptionVariables &pov) {
 
-    LOGF_INF("Running the two-point visibility example.");
+    if (pov.convex_only && pov.reflex_only) {
+        LOGF_FTL("Options 'reflex-only' and 'convex-only' cannot be used together.");
+        return EXIT_FAILURE;
+    }
+
+    LOGF_INF("Running the visible vertices example.");
 
     trivis::utils::SimpleClock clock;
     std::stringstream info;
@@ -199,54 +200,56 @@ int MainBody(const ProgramOptionVariables &pov) {
     const auto &lim = vis.limits();
     LOGF_INF("Map limits [ MIN: " << lim.x_min << ", " << lim.y_min << " | MAX: " << lim.x_max << ", " << lim.y_max << " ].");
 
-    auto source = trivis::geom::MakePoint(pov.x, pov.y);
-    auto target = trivis::geom::MakePoint(pov.tx, pov.ty);
-    auto direction = (target - source).CopyNormalized();
+    auto query = trivis::geom::MakePoint(pov.x, pov.y);
     auto vis_radius = pov.vis_radius > 0.0 ? std::make_optional(pov.vis_radius) : std::nullopt;
 
-    LOGF_INF("Locating the source point " << source << ".");
+    LOGF_INF("Locating the query point " << query << ".");
     clock.Restart();
-    auto source_pl = vis.LocatePoint(source);
-    bool is_source_inside = source_pl.has_value();
+    auto query_pl = vis.LocatePoint(query);
+    bool is_query_inside = query_pl.has_value();
     LOGF_INF("DONE. It took " << clock.TimeInSeconds() << " seconds.");
 
-    bool visible = false;
-    std::optional<trivis::geom::FPoint> ray_intersection;
-    if (!is_source_inside) {
-        LOGF_WRN("Source point " << source << " is outside of the map.");
-    } else {
+    int n_ver = static_cast<int>(vis.mesh().vertices.size());
+    std::vector<bool> tabu_vertices(n_ver, false);
+    if (pov.reflex_only || pov.convex_only) {
+        LOGF_INF("Finding reflex vertices.");
         clock.Restart();
-        if (pov.shoot_ray) {
-            LOGF_INF("Shooting a ray from " << source << " in the direction of " << target << ".");
-            auto ray_shooting_result = vis.ShootRay(source, source_pl.value(), direction, vis_radius);
-            if (ray_shooting_result) {
-                ray_intersection = ray_shooting_result->p;
-                visible = true;
+        for (int ver_id = 0; ver_id < n_ver; ++ver_id) {
+            auto neighbors = trivis::mesh::GetNeighborVertices(vis.mesh(), ver_id);
+            if (neighbors.size() != 2 || trivis::mesh::IsReflex(vis.mesh(), neighbors[0], ver_id, neighbors[1])) {
+                tabu_vertices[ver_id] = !pov.reflex_only;
             } else {
-                visible = false;
+                tabu_vertices[ver_id] = !pov.convex_only;
             }
-            LOGF_INF("DONE. It took " << clock.TimeInSeconds() << " seconds.");
-        } else {
-            LOGF_INF("Determining visibility between " << source << " and " << target << ".");
-            visible = vis.IsVisible(source, source_pl.value(), target, vis_radius);
-            LOGF_INF("DONE. It took " << clock.TimeInSeconds() << " seconds.");
         }
+        LOGF_INF("DONE. It took " << clock.TimeInSeconds() << " seconds.");
+    }
+
+    std::optional<std::vector<int>> visible_vertices;
+    if (!is_query_inside) {
+        LOGF_WRN("Query point " << query << " is outside of the map.");
+    } else {
+        LOGF_INF("Finding visible vertices from " << query << ".");
+        clock.Restart();
+        visible_vertices = vis.VisibleVertices(query, query_pl.value(), &tabu_vertices, vis_radius);
+        LOGF_INF("DONE. It took " << clock.TimeInSeconds() << " seconds.");
     }
 
     LOGF_INF("Preparing to draw the result.");
     clock.Restart();
     std::string pdf_file_str = pov.output_dir + "/";
     pdf_file_str += "ex_vis";
-    if (pov.shoot_ray) {
-        pdf_file_str += "_ray_shoot";
-    } else {
-        pdf_file_str += "_2point";
-    }
+    pdf_file_str += "_vertices";
     pdf_file_str += "_" + pov.map_name;
-    pdf_file_str += "_" + source.ToString("", "-", "");
-    pdf_file_str += "_" + target.ToString("", "-", "");
+    pdf_file_str += "_" + query.ToString("", "-", "");
     if (vis_radius) {
         pdf_file_str += "_d-" + std::to_string(vis_radius.value());
+    }
+    if (pov.reflex_only) {
+        pdf_file_str += "_reflex";
+    }
+    if (pov.convex_only) {
+        pdf_file_str += "_convex";
     }
     pdf_file_str += ".pdf";
     fs::create_directories(pov.output_dir);
@@ -259,40 +262,19 @@ int MainBody(const ProgramOptionVariables &pov) {
     drawer.OpenPDF(pdf_file_str);
     drawer.DrawMap();
     if (vis_radius) {
-        drawer.DrawArc(source, vis_radius.value(), 0.0, 2 * M_PI, 0.2, dr::kColorBlueViolet, 0.2);
+        drawer.DrawArc(query, vis_radius.value(), 0.0, 2 * M_PI, 0.2, dr::kColorBlueViolet, 0.2);
     }
-    if (is_source_inside) {
-        if (pov.shoot_ray) {
-            if (ray_intersection) {
-                drawer.DrawLine(source, ray_intersection.value(), 0.2, dr::kColorLimeGreen, 0.5);
-            } else {
-                if (vis_radius) {
-                    drawer.DrawLine(source, source + direction * vis_radius.value(), 0.2, dr::kColorLimeGreen, 0.5);
-                    drawer.DrawLine(source + direction * vis_radius.value(), source + direction * 1e4, 0.2, dr::kColorRed, 0.5);
-                } else {
-                    drawer.DrawLine(source, source + direction * 1e4, 0.2, dr::kColorRed, 0.5);
-                }
-            }
-        } else {
-            if (visible) {
-                drawer.DrawLine(source, target, 0.2, dr::kColorLimeGreen, 0.5);
-            } else {
-                if (vis_radius) {
-                    drawer.DrawLine(source, source + direction * vis_radius.value(), 0.2, dr::kColorLimeGreen, 0.5);
-                    drawer.DrawLine(source + direction * vis_radius.value(), target, 0.2, dr::kColorRed, 0.5);
-                } else {
-                    drawer.DrawLine(source, target, 0.2, dr::kColorRed, 0.5);
-                }
-            }
+    if (visible_vertices) {
+        for (const auto &ver_id: visible_vertices.value()) {
+            const auto &ver_p = vis.mesh().point(ver_id);
+            drawer.DrawLine(query, ver_p, 0.2, dr::kColorLimeGreen, 0.5);
+        }
+        for (const auto &ver_id: visible_vertices.value()) {
+            const auto &ver_p = vis.mesh().point(ver_id);
+            drawer.DrawPoint(ver_p, 0.3, dr::kColorRed);
         }
     }
-    drawer.DrawLine(source, source + direction, 0.2, dr::kColorBlueViolet);
-    drawer.DrawPoint(source, 0.3, dr::kColorBlueViolet);
-    double target_opacity = pov.shoot_ray ? 0.2 : 1.0;
-    drawer.DrawPoint(target, 0.3, dr::kColorBlueViolet, target_opacity);
-    if (ray_intersection) {
-        drawer.DrawPoint(ray_intersection.value(), 0.3, dr::kColorRed);
-    }
+    drawer.DrawPoint(query, 0.3, dr::kColorBlueViolet);
     drawer.Close();
     LOGF_INF("DONE. It took " << clock.TimeInSeconds() << " seconds.");
 

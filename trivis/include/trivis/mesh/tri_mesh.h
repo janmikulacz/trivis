@@ -51,11 +51,24 @@ struct TriMesh {
     int edge_id
 ) {
     return mesh.triangles[tri_id].vertices[0]
-           + mesh.triangles[tri_id].vertices[1]
-           + mesh.triangles[tri_id].vertices[2]
-           - mesh.edges[edge_id].vertices[0]
-           - mesh.edges[edge_id].vertices[1];
+        + mesh.triangles[tri_id].vertices[1]
+        + mesh.triangles[tri_id].vertices[2]
+        - mesh.edges[edge_id].vertices[0]
+        - mesh.edges[edge_id].vertices[1];
 }
+
+std::vector<int> GetNeighborVertices(
+    const TriMesh &mesh,
+    int ver_id
+);
+
+bool IsReflex(
+    const TriMesh &mesh,
+    int ver_id_prev,
+    int ver_id,
+    int ver_id_next,
+    double reflex_tolerance = 0.0
+);
 
 void OrderEdgesInTrianglesCCW(TriMesh &mesh);
 
@@ -87,7 +100,7 @@ void OrderEdgesInTrianglesCCW(TriMesh &mesh);
  */
 void SplitWeaklyIntersectingNodes(TriMesh &mesh);
 
-void OrderEdgesAndTrianglesInNodesCCW(TriMesh & mesh);
+void OrderEdgesAndTrianglesInNodesCCW(TriMesh &mesh);
 
 inline void Preorder(
     TriMesh &mesh,

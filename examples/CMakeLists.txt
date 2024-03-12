@@ -1,7 +1,7 @@
 # list(APPEND examples vis_graph)
-# list(APPEND examples vis_map_vertices)
 # list(APPEND examples vis_region)
 list(APPEND examples vis_2point)
+list(APPEND examples vis_vertices)
 foreach (eg ${examples})
     add_executable(${eg} ${eg}.cc)
     target_compile_definitions(${eg} PRIVATE
