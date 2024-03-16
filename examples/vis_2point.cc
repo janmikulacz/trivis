@@ -38,7 +38,8 @@ struct ProgramOptionVariables {
     std::string map_extension = ".txt";
     std::string map_dir = DEFAULT_MAP_DIR;
     std::string map_full_path;
-    std::string output_dir = DEFAULT_OUT_DIR;
+    std::string out_dir = DEFAULT_OUT_DIR;
+    std::string out_pdf;
     double map_scale = 0.01;
     bool shoot_ray = false;
     double x = 1.0;
@@ -70,8 +71,11 @@ void AddProgramOptions(
          po::value(&pov.map_dir)->default_value(pov.map_dir),
          "Map file directory.")
         ("out-dir",
-         po::value(&pov.output_dir)->default_value(pov.output_dir),
+         po::value(&pov.out_dir)->default_value(pov.out_dir),
          "Output directory.")
+        ("out-pdf",
+         po::value(&pov.out_pdf)->default_value(pov.out_pdf),
+         "Output pdf file.")
         ("map-scale",
          po::value(&pov.map_scale)->default_value(pov.map_scale),
          "Map coordinates are scaled by this factor when loading the map.")
@@ -235,21 +239,25 @@ int MainBody(const ProgramOptionVariables &pov) {
 
     LOGF_INF("Preparing to draw the result.");
     clock.Restart();
-    std::string pdf_file_str = pov.output_dir + "/";
-    pdf_file_str += "ex_vis";
-    if (pov.shoot_ray) {
-        pdf_file_str += "_ray_shoot";
+    std::string pdf_file_str = pov.out_dir + "/";
+    if (pov.out_pdf.empty()) {
+        pdf_file_str += "ex_vis";
+        if (pov.shoot_ray) {
+            pdf_file_str += "_ray_shoot";
+        } else {
+            pdf_file_str += "_2point";
+        }
+        pdf_file_str += "_" + pov.map_name;
+        pdf_file_str += "_" + source.ToString("", "-", "");
+        pdf_file_str += "_" + target.ToString("", "-", "");
+        if (vis_radius) {
+            pdf_file_str += "_d-" + std::to_string(vis_radius.value());
+        }
+        pdf_file_str += ".pdf";
     } else {
-        pdf_file_str += "_2point";
+        pdf_file_str += pov.out_pdf;
     }
-    pdf_file_str += "_" + pov.map_name;
-    pdf_file_str += "_" + source.ToString("", "-", "");
-    pdf_file_str += "_" + target.ToString("", "-", "");
-    if (vis_radius) {
-        pdf_file_str += "_d-" + std::to_string(vis_radius.value());
-    }
-    pdf_file_str += ".pdf";
-    fs::create_directories(pov.output_dir);
+    fs::create_directories(pov.out_dir);
     namespace dr = trivis_plus::drawing;
     auto drawer = dr::MakeMapDrawer(vis.map());
     LOGF_INF("DONE. It took " << clock.TimeInSeconds() << " seconds.");
@@ -257,7 +265,7 @@ int MainBody(const ProgramOptionVariables &pov) {
     LOGF_INF("Drawing the result to " << pdf_file_str << ".");
     clock.Restart();
     drawer.OpenPDF(pdf_file_str);
-    drawer.DrawMap();
+    dr::FancyDrawMap(drawer, vis);
     if (vis_radius) {
         drawer.DrawArc(source, vis_radius.value(), 0.0, 2 * M_PI, 0.2, dr::kColorBlueViolet, 0.2);
     }

@@ -362,7 +362,7 @@ public:
         ExpansionStats *stats = nullptr
     ) const;
 
-    std::vector<std::vector<bool>> VertexPointVisibilityGraphBool(
+    std::vector<std::vector<bool>> PointVertexVisibilityGraphBool(
         const geom::FPoints &points,
         const std::vector<std::optional<PointLocationResult>> &points_locations,
         const std::vector<bool> *tabu_vertices = nullptr,

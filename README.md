@@ -109,6 +109,12 @@ The example project loads maps from simple TXT files with the following structur
 ./build-Release/examples/vis_2point --vis-radius 10
 ./build-Release/examples/vis_2point --shoot-ray
 ./build-Release/examples/vis_2point --help # to see all options
+# Play with the visibility region example:
+./build-Release/examples/vis_region
+./build-Release/examples/vis_region --vis-radius 8
+./build-Release/examples/vis_region --vis-radius 8 --sample-arc-edges 0.1
+./build-Release/examples/vis_region --vis-radius 8 --sample-arc-edges 0.1 --to-polygon
+./build-Release/examples/vis_region --help # to see all options
 # Play with the visible vertices example:
 ./build-Release/examples/vis_vertices
 ./build-Release/examples/vis_vertices --reflex-only

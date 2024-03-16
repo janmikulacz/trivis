@@ -1,4 +1,5 @@
 list(APPEND examples vis_2point)
+list(APPEND examples vis_region)
 list(APPEND examples vis_vertices)
 list(APPEND examples vis_graph)
 foreach (eg ${examples})

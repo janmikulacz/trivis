@@ -930,7 +930,7 @@ std::vector<std::vector<int>> Trivis::PointVertexVisibilityGraph(
     return ret;
 }
 
-std::vector<std::vector<bool>> Trivis::VertexPointVisibilityGraphBool(
+std::vector<std::vector<bool>> Trivis::PointVertexVisibilityGraphBool(
     const geom::FPoints &points,
     const std::vector<std::optional<PointLocationResult>> &points_locations,
     const std::vector<bool> *tabu_vertices,
@@ -1641,7 +1641,7 @@ std::optional<Trivis::RayShootingResult> Trivis::ExpandEdgeRayShooting(
         if (edge_l.is_boundary()) {
             Trivis::RayShootingResult ret;
             ret.code = RaySegmentIntersection(q, distant_t, rest_l_p, opp, ret.p, ret.p2);
-            if (q.SquaredDistanceTo(ret.p) > sq_radius) {
+            if (sq_radius >= 0.0 && q.SquaredDistanceTo(ret.p) > sq_radius) {
                 return std::nullopt;
             }
             if (ret.code == '0' || ret.code == 'c' || ret.code == 'e') {
@@ -1666,7 +1666,7 @@ std::optional<Trivis::RayShootingResult> Trivis::ExpandEdgeRayShooting(
         if (edge_r.is_boundary()) {
             Trivis::RayShootingResult ret;
             ret.code = RaySegmentIntersection(q, distant_t, opp, rest_r_p, ret.p, ret.p2);
-            if (q.SquaredDistanceTo(ret.p) > sq_radius) {
+            if (sq_radius >= 0.0 && q.SquaredDistanceTo(ret.p) > sq_radius) {
                 return std::nullopt;
             }
             if (ret.code == '0' || ret.code == 'c' || ret.code == 'e') {

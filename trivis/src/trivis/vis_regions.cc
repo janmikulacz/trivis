@@ -307,7 +307,7 @@ void trivis::SampleArcEdges(
         for (int j = 0; j < angle_n - 1; ++j) {
             alpha += angle_delta;
             FPoint p = MakePoint(region.seed.x + radius * std::cos(alpha), region.seed.y + radius * std::sin(alpha));
-            new_vertices.push_back({-1, -4, p});
+            new_vertices.push_back({-1, -3, p});
         }
         region.vertices = std::move(new_vertices);
         return;
@@ -331,10 +331,10 @@ void trivis::SampleArcEdges(
         for (int j = 0; j < angle_n - 1; ++j) {
             alpha += angle_delta;
             FPoint p = MakePoint(region.seed.x + radius * std::cos(alpha), region.seed.y + radius * std::sin(alpha));
-            new_vertices.push_back({-1, -4, p});
+            new_vertices.push_back({-1, -3, p});
         }
         new_vertices.push_back(v);
-        new_vertices.back().edge_flag = -4;
+        new_vertices.back().edge_flag = -3;
     }
     region.vertices = std::move(new_vertices);
 }

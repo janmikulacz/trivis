@@ -1,5 +1,5 @@
 /**
- * File:   vis_graph.cc
+ * File:   vis_vertices.cc
  *
  * Date:   04.11.2022
  * Author: Jan Mikula
@@ -41,13 +41,14 @@ struct ProgramOptionVariables {
     std::string out_dir = DEFAULT_OUT_DIR;
     std::string out_pdf;
     double map_scale = 0.01;
+    double x = 10.0;
+    double y = 10.0;
     double vis_radius = -1.0;
-    bool reflex_only = false;
-    bool convex_only = false;
-    bool point_vertex = false;
-    bool point_point = false;
-    int n_rand_points = 20;
-    int rand_seed = 0;
+    bool no_circle_intersection = false;
+    bool remove_antennas = false;
+    double remove_short_edges = 0.0;
+    double sample_arc_edges = 0.0;
+    bool to_polygon = false;
 };
 
 void AddProgramOptions(
@@ -80,27 +81,30 @@ void AddProgramOptions(
         ("map-scale",
          po::value(&pov.map_scale)->default_value(pov.map_scale),
          "Map coordinates are scaled by this factor when loading the map.")
+        ("x",
+         po::value(&pov.x)->default_value(pov.x),
+         "X coordinate of the query.")
+        ("y",
+         po::value(&pov.y)->default_value(pov.y),
+         "Y coordinate of the query.")
         ("vis-radius",
          po::value(&pov.vis_radius)->default_value(pov.vis_radius),
          "Limited visibility radius (-1 ~ infinite).")
-        ("reflex-only",
-         po::bool_switch(&pov.reflex_only)->default_value(pov.reflex_only),
-         "Consider only reflex (non-convex) vertices.")
-        ("convex-only",
-         po::bool_switch(&pov.convex_only)->default_value(pov.convex_only),
-         "Consider only convex (non-reflex) vertices.")
-        ("point-vertex",
-         po::bool_switch(&pov.point_vertex)->default_value(pov.point_vertex),
-         "Compute visibility graph between random query points and vertices.")
-        ("point-point",
-         po::bool_switch(&pov.point_point)->default_value(pov.point_point),
-         "Compute visibility graph between random query points.")
-        ("n-rand-points",
-         po::value(&pov.n_rand_points)->default_value(pov.n_rand_points),
-         "Number of random query points.")
-        ("rand-seed",
-         po::value(&pov.rand_seed)->default_value(pov.rand_seed),
-         "Random seed.");
+        ("no-circle-intersection",
+         po::bool_switch(&pov.no_circle_intersection)->default_value(pov.no_circle_intersection),
+         "Do not intersect the visibility region with a circle centered at the query point.")
+        ("remove-antennas",
+         po::bool_switch(&pov.remove_antennas)->default_value(pov.remove_antennas),
+         "Remove antennas from the visibility region.")
+        ("remove-short-edges",
+         po::value(&pov.remove_short_edges)->default_value(pov.remove_short_edges),
+         "Remove edges shorter than the given length.")
+        ("sample-arc-edges",
+         po::value(&pov.sample_arc_edges)->default_value(pov.sample_arc_edges),
+         "Sample the arc edges of the visibility region with the given angle.")
+        ("to-polygon",
+         po::bool_switch(&pov.to_polygon)->default_value(pov.to_polygon),
+         "Convert the visibility region to a polygon.");
 }
 
 /**
@@ -175,27 +179,17 @@ char ParseProgramOptions(
  */
 int MainBody(const ProgramOptionVariables &pov) {
 
-    if (pov.convex_only && pov.reflex_only) {
-        LOGF_FTL("Options 'reflex-only' and 'convex-only' cannot be used together.");
+    if (pov.remove_short_edges < 0.0) {
+        LOGF_FTL("The length provided to the --remove-short-edges option must be non-negative.");
         return EXIT_FAILURE;
     }
 
-    if (pov.point_vertex && pov.point_point) {
-        LOGF_FTL("Options 'vertex-point' and 'point-point' cannot be used together.");
+    if (pov.sample_arc_edges < 0.0) {
+        LOGF_FTL("The angle provided to the --sample-arc-edges option must be non-negative.");
         return EXIT_FAILURE;
     }
 
-    if (pov.point_point && (pov.convex_only || pov.reflex_only)) {
-        LOGF_FTL("Options 'point-point' and 'reflex-only' or 'convex-only' cannot be used together.");
-        return EXIT_FAILURE;
-    }
-
-    if ((pov.point_vertex || pov.point_point) && pov.n_rand_points <= 0) {
-        LOGF_FTL("Option 'n-rand-points' must be positive.");
-        return EXIT_FAILURE;
-    }
-
-    LOGF_INF("Running the visibility graph example.");
+    LOGF_INF("Running the visibility region example.");
 
     trivis::utils::SimpleClock clock;
     std::stringstream info;
@@ -227,87 +221,85 @@ int MainBody(const ProgramOptionVariables &pov) {
     const auto &lim = vis.limits();
     LOGF_INF("Map limits [ MIN: " << lim.x_min << ", " << lim.y_min << " | MAX: " << lim.x_max << ", " << lim.y_max << " ].");
 
+    auto query = trivis::geom::MakePoint(pov.x, pov.y);
     auto vis_radius = pov.vis_radius > 0.0 ? std::make_optional(pov.vis_radius) : std::nullopt;
 
-    std::optional<trivis::geom::FPoints> query_points;
-    if (pov.point_vertex || pov.point_point) {
-        LOGF_INF("Generating " << pov.n_rand_points << " random query points.");
-        clock.Restart();
-        std::vector<double> accum_areas;
-        auto rng = std::mt19937(pov.rand_seed);
-        query_points = trivis::geom::FPoints{};
-        query_points->reserve(pov.n_rand_points);
-        for (int i = 0; i < pov.n_rand_points; ++i) {
-            query_points->push_back(trivis::utils::UniformRandomPointInRandomTriangle(vis.triangles(), accum_areas, rng));
-        }
-        LOGF_INF("DONE. It took " << clock.TimeInSeconds() << " seconds.");
-    }
-
-    std::optional<std::vector<std::optional<trivis::Trivis::PointLocationResult>>> query_pls;
-    if (query_points) {
-        LOGF_INF("Locating the query points.");
-        query_pls = std::vector<std::optional<trivis::Trivis::PointLocationResult>>{};
-        query_pls->reserve(pov.n_rand_points);
-        clock.Restart();
-        for (int i = 0; i < pov.n_rand_points; ++i) {
-            query_pls->push_back(vis.LocatePoint(query_points.value()[i]));
-        }
-        LOGF_INF("DONE. It took " << clock.TimeInSeconds() << " seconds.");
-    }
-
-    int n_ver = static_cast<int>(vis.mesh().vertices.size());
-    std::vector<bool> tabu_vertices(n_ver, false);
-    if (pov.reflex_only || pov.convex_only) {
-        LOGF_INF("Finding reflex vertices.");
-        clock.Restart();
-        for (int ver_id = 0; ver_id < n_ver; ++ver_id) {
-            auto neighbors = trivis::mesh::GetNeighborVertices(vis.mesh(), ver_id);
-            if (neighbors.size() != 2 || trivis::mesh::IsReflex(vis.mesh(), neighbors[0], ver_id, neighbors[1])) {
-                tabu_vertices[ver_id] = !pov.reflex_only;
-            } else {
-                tabu_vertices[ver_id] = !pov.convex_only;
-            }
-        }
-        LOGF_INF("DONE. It took " << clock.TimeInSeconds() << " seconds.");
-    }
-
-    LOGF_INF("Constructing the visibility graph.");
-    std::vector<std::vector<int>> vis_graph;
-    if (pov.point_vertex) {
-        vis_graph = vis.PointVertexVisibilityGraph(query_points.value(), query_pls.value(), &tabu_vertices, vis_radius);
-    } else if (pov.point_point) {
-        vis_graph = vis.PointPointVisibilityGraph(query_points.value(), query_pls.value(), vis_radius);
-    } else {
-        vis_graph = vis.VertexVertexVisibilityGraph(&tabu_vertices, vis_radius);
-    }
+    LOGF_INF("Locating the query point " << query << ".");
+    clock.Restart();
+    auto query_pl = vis.LocatePoint(query);
+    bool is_query_inside = query_pl.has_value();
     LOGF_INF("DONE. It took " << clock.TimeInSeconds() << " seconds.");
+
+    std::optional<trivis::RadialVisibilityRegion> vis_region;
+    std::optional<trivis::geom::FPolygon> vis_polygon;
+    if (!is_query_inside) {
+        LOGF_WRN("Query point " << query << " is outside of the map.");
+    } else {
+        LOGF_INF("Finding the region visible from " << query << ".");
+        clock.Restart();
+        auto vis_region_abstract = vis.VisibilityRegion(query, query_pl.value(), vis_radius);
+        LOGF_INF("DONE. It took " << clock.TimeInSeconds() << " seconds.");
+        LOGF_INF("Converting the abstract visibility region to the radial visibility region.");
+        clock.Restart();
+        vis_region = vis.ToRadialVisibilityRegion(vis_region_abstract);
+        LOGF_INF("DONE. It took " << clock.TimeInSeconds() << " seconds.");
+        if (vis_radius && !pov.no_circle_intersection) {
+            LOGF_INF("Intersecting the visibility region with a circle centered at the query point.");
+            clock.Restart();
+            vis_region->IntersectWithCircleCenteredAtSeed(vis_radius);
+            LOGF_INF("DONE. It took " << clock.TimeInSeconds() << " seconds.");
+        }
+        if (pov.remove_antennas) {
+            LOGF_INF("Removing antennas from the visibility region.");
+            clock.Restart();
+            vis_region->RemoveAntennas();
+            LOGF_INF("DONE. It took " << clock.TimeInSeconds() << " seconds.");
+        }
+        if (pov.remove_short_edges > 0.0) {
+            LOGF_INF("Removing short edges from the visibility region.");
+            clock.Restart();
+            vis_region->RemoveShortEdges(pov.remove_short_edges);
+            LOGF_INF("DONE. It took " << clock.TimeInSeconds() << " seconds.");
+        }
+        if (vis_radius && pov.sample_arc_edges > 0.0) {
+            LOGF_INF("Sampling the arc edges of the visibility region.");
+            clock.Restart();
+            vis_region->SampleArcEdges(pov.sample_arc_edges);
+            LOGF_INF("DONE. It took " << clock.TimeInSeconds() << " seconds.");
+        }
+        if (pov.to_polygon) {
+            LOGF_INF("Converting the visibility region to a polygon.");
+            clock.Restart();
+            vis_polygon = vis_region->ToPolygon();
+            LOGF_INF("DONE. It took " << clock.TimeInSeconds() << " seconds.");
+        }
+    }
 
     LOGF_INF("Preparing to draw the result.");
     clock.Restart();
     std::string pdf_file_str = pov.out_dir + "/";
     if (pov.out_pdf.empty()) {
         pdf_file_str += "ex_vis";
-        pdf_file_str += "_graph";
-        if (pov.point_vertex) {
-            pdf_file_str += "_pv";
-        } else if (pov.point_point) {
-            pdf_file_str += "_pp";
-        } else {
-            pdf_file_str += "_vv";
-        }
+        pdf_file_str += "_region";
         pdf_file_str += "_" + pov.map_name;
-        if (query_points) {
-            pdf_file_str += "_n-" + std::to_string(pov.n_rand_points);
-            pdf_file_str += "_s-" + std::to_string(pov.rand_seed);
-        }
+        pdf_file_str += "_" + query.ToString("", "-", "");
         if (vis_radius) {
             pdf_file_str += "_d-" + std::to_string(vis_radius.value());
         }
-        if (pov.reflex_only) {
-            pdf_file_str += "_reflex";
+        if (pov.no_circle_intersection) {
+            pdf_file_str += "_no_circle_int";
         }
-        if (pov.convex_only) {
-            pdf_file_str += "_convex";
+        if (pov.remove_antennas) {
+            pdf_file_str += "_no_antennas";
+        }
+        if (pov.remove_short_edges > 0.0) {
+            pdf_file_str += "_no_short_edges-" + std::to_string(pov.remove_short_edges);
+        }
+        if (pov.sample_arc_edges > 0.0) {
+            pdf_file_str += "_sample_arc_edges-" + std::to_string(pov.sample_arc_edges);
+        }
+        if (pov.to_polygon) {
+            pdf_file_str += "_polygon";
         }
         pdf_file_str += ".pdf";
     } else {
@@ -322,24 +314,17 @@ int MainBody(const ProgramOptionVariables &pov) {
     clock.Restart();
     drawer.OpenPDF(pdf_file_str);
     dr::FancyDrawMap(drawer, vis);
-    for (int id1 = 0; id1 < vis_graph.size(); ++id1) {
-        const auto &p1 = (pov.point_vertex || pov.point_point) ? query_points.value()[id1] : vis.mesh().point(id1);
-        for (int id2: vis_graph[id1]) {
-            const auto &p2 = pov.point_point ? query_points.value()[id2] : vis.mesh().point(id2);
-            drawer.DrawLine(p1, p2, 0.2, dr::kColorLimeGreen, 0.5);
+    if (!query_pl) {
+        if (vis_radius) {
+            drawer.DrawArc(query, vis_radius.value(), 0.0, 2 * M_PI, 0.2, dr::kColorBlueViolet, 0.2);
         }
-    }
-    if (!pov.point_point) {
-        for (int ver_id = 0; ver_id < n_ver; ++ver_id) {
-            const auto &ver_p = vis.mesh().point(ver_id);
-            if (!tabu_vertices[ver_id]) {
-                drawer.DrawPoint(ver_p, 0.3, dr::kColorRed);
-            }
-        }
-    }
-    if (query_points) {
-        for (int i = 0; i < pov.n_rand_points; ++i) {
-            drawer.DrawPoint(query_points.value()[i], 0.3, dr::kColorBlueViolet);
+        drawer.DrawPoint(query, 0.3, dr::kColorBlueViolet);
+    } else {
+        if (vis_polygon) {
+            drawer.DrawPolygon(vis_polygon.value(), dr::kColorLimeGreen, 0.5);
+            drawer.DrawPoint(query, 0.3, dr::kColorBlueViolet);
+        } else {
+            dr::FancyDrawRadialVisibilityRegion(drawer, vis_region.value());
         }
     }
     drawer.Close();
