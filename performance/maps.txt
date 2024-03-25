@@ -9,7 +9,6 @@ scene_mp_6p_01
 scene_mp_6p_02
 scene_mp_6p_03
 scene_sp_cha_01
-scene_sp_cha_02
 scene_sp_cha_03
 scene_sp_cha_04
 scene_sp_endmaps

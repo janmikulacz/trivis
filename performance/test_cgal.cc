@@ -1,5 +1,5 @@
 /**
- * File:   test_cgal_tea.cc
+ * File:   test_cgal.cc
  *
  * Date:   13.01.2024
  * Author: Jan Mikula
@@ -89,10 +89,6 @@ using PointLocation = CGAL::Arr_walk_along_line_point_location<Arrangement<Kerne
 // template<typename Kernel>
 // using PointLocation = CGAL::Arr_triangulation_point_location<Arrangement<Kernel>>; // 0.0399803 s (FAIL)
 
-/**
- * All program option variables and their default values should be defined here.
- * For each variable, there should be an option added in AddProgramOptions.
- */
 struct ProgramOptionVariables {
     std::string map_name;
     std::string map_extension = ".txt";
@@ -137,15 +133,6 @@ void AddProgramOptions(
         ("max-points", po_value(pov.max_points), "Maximum number of points to test.");
 }
 
-/**
- *
- * Parses arguments and initializes logging.
- *
- * @param argc Number of arguments.
- * @param argv Array of arguments.
- * @param pov
- * @return Character 'e' if an exception occurred, 'h' if --help option, '0' else.
- */
 char ParseProgramOptions(
     int argc,
     const char *const *argv,
@@ -154,7 +141,7 @@ char ParseProgramOptions(
     using namespace trivis_plus::utils;
     po::variables_map vm;
     po::options_description command_line_options;
-    po::options_description options_description("General options");
+    po::options_description options_description("Program options");
     AddProgramOptions(options_description, pov);
     try {
         // Parse the command line arguments.
@@ -302,26 +289,20 @@ struct VisibilityQueryResult {
     Arrangement<Kernel> visi_polygon;
 };
 
-/**
- *
- *  ##########################################
- *  ## THIS IS THE MAIN BODY OF THE PROGRAM ##
- *  ##########################################
- *
- * @param pov ~ program option variables
- * @return exit code
- */
 template<typename Kernel, typename Visibility>
 int MainBody(const ProgramOptionVariables &pov) {
 
     trivis::utils::SimpleClock clock;
+    std::stringstream info;
 
-    trivis::geom::PolyMap map;
-    std::string load_msg = trivis_plus::data_loading::LoadPolyMapSafely(pov.map_full_path, map);
-    if (load_msg != "ok") {
-        LOGF_FTL("Error while loading map. " << load_msg);
+    clock.Restart();
+    auto map_opt = trivis_plus::data_loading::LoadPolyMap(pov.map_full_path, std::nullopt, &info);
+    if (!map_opt) {
+        LOGF_FTL("Error while loading map: '" << info.str() << "'.");
         return EXIT_FAILURE;
     }
+    auto map = std::move(map_opt.value());
+    map_opt = std::nullopt; // cannot use map_opt anymore ! (it was moved)
     std::ifstream ifs(pov.points_full_path);
     if (!ifs.is_open()) {
         LOGF_FTL("Cannot open file " << pov.points_full_path << " for reading.");

@@ -33,10 +33,6 @@ namespace po = boost::program_options;
 namespace fs = boost::filesystem;
 namespace dr = trivis_plus::drawing;
 
-/**
- * All program option variables and their default values should be defined here.
- * For each variable, there should be an option added in AddProgramOptions.
- */
 struct ProgramOptionVariables {
     std::string map_name;
     std::string map_extension = ".txt";
@@ -81,15 +77,6 @@ void AddProgramOptions(
         ("single-point-test-draw-file", po_value(pov.single_point_test_draw_file), "Draw the single point test to the given file.");
 }
 
-/**
- *
- * Parses arguments and initializes logging.
- *
- * @param argc Number of arguments.
- * @param argv Array of arguments.
- * @param pov
- * @return Character 'e' if an exception occurred, 'h' if --help option, '0' else.
- */
 char ParseProgramOptions(
     int argc,
     const char *const *argv,
@@ -98,7 +85,7 @@ char ParseProgramOptions(
     using namespace trivis_plus::utils;
     po::variables_map vm;
     po::options_description command_line_options;
-    po::options_description options_description("General options");
+    po::options_description options_description("Program options");
     AddProgramOptions(options_description, pov);
     try {
         // Parse the command line arguments.
@@ -138,25 +125,19 @@ char ParseProgramOptions(
     return '0';
 }
 
-/**
- *
- *  ##########################################
- *  ## THIS IS THE MAIN BODY OF THE PROGRAM ##
- *  ##########################################
- *
- * @param pov ~ program option variables
- * @return exit code
- */
 int MainBody(const ProgramOptionVariables &pov) {
 
     trivis::utils::SimpleClock clock;
+    std::stringstream info;
 
-    trivis::geom::PolyMap map;
-    std::string load_msg = trivis_plus::data_loading::LoadPolyMapSafely(pov.map_full_path, map);
-    if (load_msg != "ok") {
-        LOGF_FTL("Error while loading map. " << load_msg);
+    clock.Restart();
+    auto map_opt = trivis_plus::data_loading::LoadPolyMap(pov.map_full_path, std::nullopt, &info);
+    if (!map_opt) {
+        LOGF_FTL("Error while loading map: '" << info.str() << "'.");
         return EXIT_FAILURE;
     }
+    auto map = std::move(map_opt.value());
+    map_opt = std::nullopt; // cannot use map_opt anymore ! (it was moved)
     std::ifstream ifs(pov.points_full_path);
     if (!ifs.is_open()) {
         LOGF_FTL("Cannot open file " << pov.points_full_path << " for reading.");
@@ -205,7 +186,7 @@ int MainBody(const ProgramOptionVariables &pov) {
         ofs << "time_init" << " " << std::fixed << std::setprecision(std::numeric_limits<double>::max_digits10) << time_init << "\n";
     }
     if (pov.check_map_validity) {
-        LOGF_WRN("Map validity is not supported in Trivis");
+        LOGF_WRN("Map validity is not supported in TřiVis");
     }
 
     clock.Restart();

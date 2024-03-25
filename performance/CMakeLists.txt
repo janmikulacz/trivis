@@ -6,9 +6,9 @@ set(COMPILE_DEFINITIONS
         DEFAULT_POINT_DIR="${PROJECT_SOURCE_DIR}/data/points"
 )
 
-add_executable(gen_inst gen_inst.cc)
-target_compile_definitions(gen_inst PRIVATE ${COMPILE_DEFINITIONS})
-target_link_libraries(gen_inst PUBLIC TrivisPlus)
+add_executable(gen_points gen_points.cc)
+target_compile_definitions(gen_points PRIVATE ${COMPILE_DEFINITIONS})
+target_link_libraries(gen_points PUBLIC TrivisPlus)
 
 add_executable(test_visilibity test_visilibity.cc)
 target_compile_definitions(test_visilibity PRIVATE ${COMPILE_DEFINITIONS})

@@ -2,11 +2,11 @@ list(APPEND examples vis_2point)
 list(APPEND examples vis_region)
 list(APPEND examples vis_vertices)
 list(APPEND examples vis_graph)
-foreach (eg ${examples})
-    add_executable(${eg} ${eg}.cc)
-    target_compile_definitions(${eg} PRIVATE
+foreach (example ${examples})
+    add_executable(${example} ${example}.cc)
+    target_compile_definitions(${example} PRIVATE
             DEFAULT_MAP_DIR="${PROJECT_SOURCE_DIR}/data/maps"
             DEFAULT_OUT_DIR="${CMAKE_CURRENT_SOURCE_DIR}/outputs"
     )
-    target_link_libraries(${eg} PUBLIC TrivisPlus)
+    target_link_libraries(${example} PUBLIC TrivisPlus)
 endforeach ()

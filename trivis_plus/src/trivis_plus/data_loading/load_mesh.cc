@@ -24,7 +24,7 @@ bool trivis_plus::data_loading::SaveTriMesh(
         return false;
     }
     fs << "MESH TRIANGULAR VERSION 1.0\n";
-    fs << "\n[NODES]\n";
+    fs << "\n[VERTICES]\n";
     fs << mesh.vertices.size() << "\n";
     for (int ver_id = 0; ver_id < mesh.vertices.size(); ++ver_id) {
         const auto &vertex = mesh.vertices[ver_id];
@@ -42,7 +42,7 @@ bool trivis_plus::data_loading::SaveTriMesh(
         for (int triangle_id: vertex.triangles) {
             fs << " " << triangle_id;
         }
-        // split partner
+        // next weakly simple vertex
         fs << " " << vertex.next_weak_intersect_ver.value_or(-1);
         fs << "\n";
     }
@@ -115,7 +115,7 @@ std::optional<trivis::mesh::TriMesh> trivis_plus::data_loading::LoadTriMesh(
         trivis::mesh::TriMesh out_mesh;
         while (!fs.eof()) {
             fs >> token;
-            if (token == "[NODES]") {
+            if (token == "[NODES]" || token == "[VERTICES]") {
                 int n_vertices;
                 fs >> n_vertices;
                 out_mesh.vertices.resize(n_vertices);
@@ -138,7 +138,7 @@ std::optional<trivis::mesh::TriMesh> trivis_plus::data_loading::LoadTriMesh(
                     for (int &t: vertex.triangles) {
                         fs >> t;
                     }
-                    // split partner
+                    // next weakly simple vertex
                     int next_weakly_simple_node;
                     fs >> next_weakly_simple_node;
                     if (next_weakly_simple_node != -1) {

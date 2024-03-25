@@ -28,10 +28,6 @@
 namespace po = boost::program_options;
 namespace fs = boost::filesystem;
 
-/**
- * All program option variables and their default values should be defined here.
- * For each variable, there should be an option added in AddProgramOptions.
- */
 struct ProgramOptionVariables {
     std::string verbosity = "info";
     std::string map_name = "potholes";
@@ -99,11 +95,6 @@ void AddProgramOptions(
          "Limited visibility radius (-1 ~ infinite).");
 }
 
-/**
- * Get the severity level from the verbosity string.
- * @param pov Program option variables.
- * @return Severity level.
- */
 trivis_plus::utils::severity_level GetSeverity(const ProgramOptionVariables &pov) {
     if (pov.verbosity == "trace") return trivis_plus::utils::severity_level::trace;
     if (pov.verbosity == "debug") return trivis_plus::utils::severity_level::debug;
@@ -115,13 +106,6 @@ trivis_plus::utils::severity_level GetSeverity(const ProgramOptionVariables &pov
     return trivis_plus::utils::severity_level::info;
 }
 
-/**
- * Parse the program options and initialize logging.
- * @param argc Number of arguments.
- * @param argv Array of arguments.
- * @param pov Program option variables.
- * @return Character 'e' if an exception occurred, 'h' if help option, '0' else.
- */
 char ParseProgramOptions(
     int argc,
     const char *const *argv,
@@ -129,7 +113,7 @@ char ParseProgramOptions(
 ) {
     po::variables_map vm;
     po::options_description command_line_options;
-    po::options_description options_description("General options");
+    po::options_description options_description("Program options");
     AddProgramOptions(options_description, pov);
     try {
         // Parse the command line arguments.
@@ -160,15 +144,6 @@ char ParseProgramOptions(
     return '0';
 }
 
-/**
- *
- *  ##########################################
- *  ## THIS IS THE MAIN BODY OF THE PROGRAM ##
- *  ##########################################
- *
- * @param pov ~ program option variables
- * @return exit code
- */
 int MainBody(const ProgramOptionVariables &pov) {
 
     LOGF_INF("Running the two-point visibility example.");
@@ -201,7 +176,7 @@ int MainBody(const ProgramOptionVariables &pov) {
     LOGF_INF("DONE. It took " << clock.TimeInSeconds() << " seconds.");
 
     const auto &lim = vis.limits();
-    LOGF_INF("Map limits [ MIN: " << lim.x_min << ", " << lim.y_min << " | MAX: " << lim.x_max << ", " << lim.y_max << " ].");
+    LOGF_INF("Map limits: [ MIN: " << lim.x_min << ", " << lim.y_min << " | MAX: " << lim.x_max << ", " << lim.y_max << " ].");
 
     auto source = trivis::geom::MakePoint(pov.x, pov.y);
     auto target = trivis::geom::MakePoint(pov.tx, pov.ty);

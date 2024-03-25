@@ -34,10 +34,6 @@ namespace po = boost::program_options;
 namespace fs = boost::filesystem;
 namespace dr = trivis_plus::drawing;
 
-/**
- * All program option variables and their default values should be defined here.
- * For each variable, there should be an option added in AddProgramOptions.
- */
 struct ProgramOptionVariables {
     std::string map_type;
     std::string map_name;
@@ -92,15 +88,6 @@ void AddProgramOptions(
         ("out-file-append", po_value(pov.out_file_append), "Append to output file.");
 }
 
-/**
- *
- * Parses arguments and initializes logging.
- *
- * @param argc Number of arguments.
- * @param argv Array of arguments.
- * @param pov
- * @return Character 'e' if an exception occurred, 'h' if --help option, '0' else.
- */
 char ParseProgramOptions(
     int argc,
     const char *const *argv,
@@ -239,26 +226,20 @@ std::optional<LoadPolygonResult> LoadPolygon(
     return result;
 }
 
-/**
- *
- *  ##########################################
- *  ## THIS IS THE MAIN BODY OF THE PROGRAM ##
- *  ##########################################
- *
- * @param pov ~ program option variables
- * @return exit code
- */
 int MainBody(const ProgramOptionVariables &pov) {
 
     trivis::utils::SimpleClock clock;
     std::string line;
+    std::stringstream info;
 
-    trivis::geom::PolyMap map;
-    std::string load_msg = trivis_plus::data_loading::LoadPolyMapSafely(pov.map_full_path, map);
-    if (load_msg != "ok") {
-        LOGF_FTL("Error while loading map. " << load_msg);
+    clock.Restart();
+    auto map_opt = trivis_plus::data_loading::LoadPolyMap(pov.map_full_path, std::nullopt, &info);
+    if (!map_opt) {
+        LOGF_FTL("Error while loading map: '" << info.str() << "'.");
         return EXIT_FAILURE;
     }
+    auto map = std::move(map_opt.value());
+    map_opt = std::nullopt; // cannot use map_opt anymore ! (it was moved)
     trivis::geom::FLimits lim = map.limits();
     Clipper2Lib::Paths64 map_clipper = trivis::utils::ToClipper(map);
     double map_area_clipper = Clipper2Lib::Area(map_clipper);

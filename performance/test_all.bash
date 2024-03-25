@@ -6,39 +6,28 @@ out_dir="./outputs"
 max_points=1000
 
 visilibity_epsilon="1e-12"
-test_frameworks=("trivis" "trivis_inexact" "visilibity" "cgal")
-cgal_algorithms=("triangular_expansion" "rotational_sweep" "simple_polygon")
+test_frameworks=("trivis" "cgal" "visilibity")
+cgal_algorithms=("triangular_expansion" "rotational_sweep")
 cgal_versions=("default" "inexact_constructions")
 declare -A timeouts
 timeouts["trivis"]=20
-timeouts["trivis_inexact"]=20
 timeouts["cgal_triangular_expansion"]=20
 timeouts["cgal_triangular_expansion_inexact_constructions"]=20
 timeouts["cgal_rotational_sweep"]=60
 timeouts["cgal_rotational_sweep_inexact_constructions"]=60
-timeouts["cgal_simple_polygon"]=60
-timeouts["cgal_simple_polygon_inexact_constructions"]=60
 timeouts["visilibity"]=3600 # doesn't need timeout
 
-# Load the points types from points_types.txt.
-points_types=()
+# Load the points types from point_sets.txt.
+point_sets=()
 while IFS= read -r line; do
-  points_types+=("$line")
-done < points_types.txt
+  point_sets+=("$line")
+done < point_sets.txt
 
-# Load the maps from maps.txt and maps-simple.txt.
-maps_all=()
+# Load the maps from maps.txt.
+maps=()
 while IFS= read -r line; do
-  maps_all+=("$line")
+  maps+=("$line")
 done < maps.txt
-maps_simple=()
-while IFS= read -r line; do
-  maps_simple+=("$line")
-done < maps-simple.txt
-for map_simple in "${maps_simple[@]}"
-do
-  maps_all+=("${map_simple}")
-done
 
 for test_framework in "${test_frameworks[@]}"; do
 
@@ -69,19 +58,12 @@ for test_framework in "${test_frameworks[@]}"; do
 
       timeout="${timeouts[${method_name}]}"
 
-      for points_type in "${points_types[@]}"; do
+      for point_set in "${point_sets[@]}"; do
 
-        # Set the maps to test.
-        test_maps=()
-        if [ "${algorithm}" == "simple_polygon" ]; then
-          test_maps=("${maps_simple[@]}")
-        else
-          test_maps=("${maps_all[@]}")
-        fi
+        for map in "${maps[@]}"; do
 
-        for map in "${test_maps[@]}"; do
           # Prepare the arguments.
-          points_name="${map}_points_${points_type}"
+          points_name="${map}_points_${point_set}"
           output_file="${out_dir}/${points_name}_${method_name}.txt"
           args=""
           args="${args} --map-name ${map}"
@@ -167,7 +149,7 @@ for test_framework in "${test_frameworks[@]}"; do
             done
           fi
         done # map
-      done # points_type
+      done # point_set
     done # algorithm_version
   done # algorithm
 done # test_framework

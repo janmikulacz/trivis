@@ -18,6 +18,35 @@ using namespace trivis_plus::data_loading;
 using namespace trivis;
 using namespace trivis::geom;
 
+bool data_loading::SaveVisibilityRegion(
+    const RadialVisibilityRegion &region,
+    const std::string &file,
+    std::stringstream *info
+) {
+    std::ofstream fs(file);
+    if (!fs.is_open()) {
+        if (info) *info << "Cannot open file " << file << " for writing.\n";
+        return false;
+    }
+    // todo: implement this!
+    if (info) *info << "SaveVisibilityRegion is not implemented!\n";
+    return false;
+}
+
+std::optional<trivis::RadialVisibilityRegion> data_loading::LoadVisibilityRegion(
+    const std::string &file,
+    std::stringstream *info
+) {
+    std::ifstream fs(file);
+    if (!fs.is_open()) {
+        if (info) *info << "Cannot open file " << file << " for reading.\n";
+        return std::nullopt;
+    }
+    // todo: implement this!
+    if (info) *info << "LoadVisibilityRegion is not implemented!\n";
+    return std::nullopt;
+}
+
 bool data_loading::LoadVisibilityRegion(
     const std::string &file,
     RadialVisibilityRegion &visibility_region
@@ -81,29 +110,4 @@ std::string data_loading::LoadVisibilityRegionSafely(
         return "Error while loading " + file + ":\n" + e.what();
     }
     return "ok";
-}
-
-bool data_loading::SaveVisibilityRegion(
-    const RadialVisibilityRegion &region,
-    const std::string &file,
-    std::stringstream *info
-) {
-    std::ofstream fs(file);
-    if (!fs.is_open()) {
-        if (info) *info << "Cannot open file " << file << " for writing.\n";
-        return false;
-    }
-
-    return false;
-}
-
-std::optional<trivis::RadialVisibilityRegion> data_loading::LoadVisibilityRegion(
-    const std::string &file,
-    std::stringstream *info
-) {
-    std::ifstream fs(file);
-    if (!fs.is_open()) {
-        if (info) *info << "Cannot open file " << file << " for reading.\n";
-        return std::nullopt;
-    }
 }

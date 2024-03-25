@@ -1,5 +1,5 @@
 /**
- * File:   generate_instances.cc
+ * File:   gen_points.cc
  *
  * Date:   10.01.2024
  * Author: Jan Mikula
@@ -38,10 +38,6 @@ namespace po = boost::program_options;
 namespace fs = boost::filesystem;
 namespace dr = trivis_plus::drawing;
 
-/**
- * All program option variables and their default values should be defined here.
- * For each variable, there should be an option added in AddProgramOptions.
- */
 struct ProgramOptionVariables {
     std::string map_name;
     std::string map_extension = ".txt";
@@ -50,10 +46,11 @@ struct ProgramOptionVariables {
     std::string mesh_dir = DEFAULT_MESH_DIR;
     std::string points_dir = DEFAULT_POINT_DIR;
     double bucket_size = 1.0;
-    int max_points = 10000;
+    int max_points = 1000;
     int eps_close_point_exp_max = -1;
     int eps_close_point_exp_min = -15;
     int random_seed = 42;
+    bool draw = false;
 };
 
 void AddProgramOptions(
@@ -72,18 +69,10 @@ void AddProgramOptions(
         ("max-points", po::value(&pov.max_points)->default_value(pov.max_points), "Number of points.")
         ("eps-close-point-exp-max", po::value(&pov.eps_close_point_exp_max)->default_value(pov.eps_close_point_exp_max), "Max exponent of epsilon for close points.")
         ("eps-close-point-exp-min", po::value(&pov.eps_close_point_exp_min)->default_value(pov.eps_close_point_exp_min), "Min exponent of epsilon for close points.")
-        ("random-seed", po::value(&pov.random_seed)->default_value(pov.random_seed), "Random seed.");
+        ("random-seed", po::value(&pov.random_seed)->default_value(pov.random_seed), "Random seed.")
+        ("draw", po::bool_switch(&pov.draw)->default_value(pov.draw), "Draw the mesh and the points.");
 }
 
-/**
- *
- * Parses arguments and initializes logging.
- *
- * @param argc Number of arguments.
- * @param argv Array of arguments.
- * @param pov
- * @return Character 'e' if an exception occurred, 'h' if --help option, '0' else.
- */
 char ParseProgramOptions(
     int argc,
     const char *const *argv,
@@ -92,7 +81,7 @@ char ParseProgramOptions(
     using namespace trivis_plus::utils;
     po::variables_map vm;
     po::options_description command_line_options;
-    po::options_description options_description("General options");
+    po::options_description options_description("Program options");
     AddProgramOptions(options_description, pov);
     try {
         // Parse the command line arguments.
@@ -127,10 +116,11 @@ bool SaveAndDrawPoints(
     const trivis::geom::FPoints &points,
     const std::string &points_path_no_ext,
     const std::string &points_name,
-    dr::MapDrawer &drawer
+    dr::MapDrawer &drawer,
+    bool draw = true
 ) {
     trivis::utils::SimpleClock clock;
-    LOGF_INF(">> Saving " << points.size() << " " << points_name << " points and drawing.");
+    LOGF_INF("Saving " << points.size() << " " << points_name << " points.");
     clock.Restart();
     std::fstream fs;
     fs.open(points_path_no_ext + "_" + points_name + ".txt", std::ios::out | std::ios::trunc);
@@ -146,57 +136,53 @@ bool SaveAndDrawPoints(
            << std::fixed << std::setprecision(std::numeric_limits<double>::max_digits10) << point.y << "\n";
     }
     fs.close();
-    drawer.OpenPDF(points_path_no_ext + "_" + points_name + ".pdf");
-    drawer.DrawMap();
-    drawer.DrawPoints(points, 0.25, dr::kColorRed);
-    drawer.Close();
-    LOGF_INF("<< DONE. It took " << clock.TimeInSeconds() << " seconds.");
+    if (draw) {
+        drawer.OpenPDF(points_path_no_ext + "_" + points_name + ".pdf");
+        drawer.DrawMap();
+        drawer.DrawPoints(points, 0.5, dr::kColorRed);
+        drawer.Close();
+    }
+    LOGF_INF("DONE. It took " << clock.TimeInSeconds() << " seconds.");
     return true;
 }
 
-/**
- *
- *  ##########################################
- *  ## THIS IS THE MAIN BODY OF THE PROGRAM ##
- *  ##########################################
- *
- * @param pov ~ program option variables
- * @return exit code
- */
 int MainBody(const ProgramOptionVariables &pov) {
 
     trivis::utils::SimpleClock clock;
+    std::stringstream info;
 
-    LOGF_INF(">> Initializing TriVis.");
+    LOGF_INF("Loading map from " << pov.map_full_path << ".");
     clock.Restart();
-    // Create and initialize the TriVis object.
-    trivis::Trivis vis;
-    {   // Load map from file and move it to TriVis (without copying).
-        trivis::geom::PolyMap map;
-        std::string load_msg = trivis_plus::data_loading::LoadPolyMapSafely(pov.map_full_path, map);
-        if (load_msg != "ok") {
-            LOGF_FTL("Error while loading map. " << load_msg);
-            return EXIT_FAILURE;
-        }
-        vis.SetMap(std::move(map)); // Set the map to TriVis instance.
+    auto map = trivis_plus::data_loading::LoadPolyMap(pov.map_full_path, std::nullopt, &info);
+    if (!map) {
+        LOGF_FTL("Error while loading map: '" << info.str() << "'.");
+        return EXIT_FAILURE;
     }
-    vis.ConstructMeshCDT();
-    LOGF_INF("<< DONE. It took " << clock.TimeInSeconds() << " seconds.");
+    LOGF_INF("DONE. It took " << clock.TimeInSeconds() << " seconds.");
 
+    LOGF_INF("Initializing TřiVis.");
+    clock.Restart();
+    trivis::Trivis vis{std::move(map.value())}; // Default initialization.
+    map = std::nullopt; // cannot use map anymore ! (it was moved)
     const auto &lim = vis.limits();
-    LOGF_INF("Map limits [ MIN: " << lim.x_min << ", " << lim.y_min << " | MAX: " << lim.x_max << ", " << lim.y_max << " ].");
+    LOGF_INF("DONE. It took " << clock.TimeInSeconds() << " seconds.");
+    LOGF_INF("Map limits: [ MIN: " << lim.x_min << ", " << lim.y_min << " | MAX: " << lim.x_max << ", " << lim.y_max << " ].");
 
-    LOGF_INF(">> Saving mesh and drawing.");
+    LOGF_INF("Saving mesh.");
     clock.Restart();
     std::string mesh_path_no_ext = pov.mesh_dir + "/" + pov.map_name + "_cdt";
     trivis_plus::data_loading::SaveTriMesh(vis.mesh(), mesh_path_no_ext + ".txt");
     auto drawer = dr::MakeMapDrawer(vis.map());
-    drawer.OpenPDF(mesh_path_no_ext + ".pdf");
-    drawer.DrawMap();
-    drawer.DrawPolygons(vis.triangles(), 0.05, dr::kColorRed);
-    drawer.Close();
-    LOGF_INF("<< DONE. It took " << clock.TimeInSeconds() << " seconds.");
+    if (pov.draw) {
+        drawer.OpenPDF(mesh_path_no_ext + ".pdf");
+        drawer.DrawMap();
+        drawer.DrawPolygons(vis.triangles(), 0.1, dr::kColorRed);
+        drawer.Close();
+    }
+    LOGF_INF("DONE. It took " << clock.TimeInSeconds() << " seconds.");
 
+    LOGF_INF("Generating points.");
+    clock.Restart();
     int n_close_points = pov.eps_close_point_exp_max - pov.eps_close_point_exp_min + 1;
     std::vector<std::normal_distribution<double>> normal_dists;
     normal_dists.reserve(n_close_points);
@@ -209,7 +195,7 @@ int MainBody(const ProgramOptionVariables &pov) {
     trivis::geom::FPoints points;
     auto point_path_no_ext = pov.points_dir + "/" + pov.map_name + "_points";
 
-    {   // Get node points.
+    {   // Generate points on map vertices (Ver).
         auto rng = std::mt19937(pov.random_seed);
         points.clear();
         points.reserve(vis.mesh().vertices.size());
@@ -220,12 +206,12 @@ int MainBody(const ProgramOptionVariables &pov) {
         if (points.size() > pov.max_points) {
             points.resize(pov.max_points);
         }
-        if (!SaveAndDrawPoints(points, point_path_no_ext, "on_nodes", drawer)) {
+        if (!SaveAndDrawPoints(points, point_path_no_ext, "Ver", drawer, pov.draw)) {
             return EXIT_FAILURE;
         }
     }
 
-    {   // Get close-to-node points.
+    {   // Generate points close to map vertices (NearV).
         auto rng = std::mt19937(pov.random_seed);
         points.clear();
         points.reserve(vis.mesh().vertices.size() * n_close_points);
@@ -238,28 +224,29 @@ int MainBody(const ProgramOptionVariables &pov) {
         if (points.size() > pov.max_points) {
             points.resize(pov.max_points);
         }
-        if (!SaveAndDrawPoints(points, point_path_no_ext, "close_to_nodes", drawer)) {
+        if (!SaveAndDrawPoints(points, point_path_no_ext, "NearV", drawer, pov.draw)) {
             return EXIT_FAILURE;
         }
     }
 
-    {   // Get edge mid-points.
+    {   // Generate points on map edge midpoints (Mid).
         auto rng = std::mt19937(pov.random_seed);
         points.clear();
         points.reserve(vis.mesh().edges.size());
         for (const auto &edge: vis.mesh().edges) {
-            points.emplace_back((vis.mesh().vertices[edge.vertices[0]].point + vis.mesh().vertices[edge.vertices[1]].point) / 2.0);
+            auto midpoint = (vis.mesh().vertices[edge.vertices[0]].point + vis.mesh().vertices[edge.vertices[1]].point) / 2.0;
+            points.push_back(std::move(midpoint));
         }
         std::shuffle(points.begin(), points.end(), rng);
         if (points.size() > pov.max_points) {
             points.resize(pov.max_points);
         }
-        if (!SaveAndDrawPoints(points, point_path_no_ext, "edge_mid_points", drawer)) {
+        if (!SaveAndDrawPoints(points, point_path_no_ext, "Mid", drawer, pov.draw)) {
             return EXIT_FAILURE;
         }
     }
 
-    {   // Get close-to-edge-mid-points.
+    {   // Generate points close to map edge midpoints (NearM).
         auto rng = std::mt19937(pov.random_seed);
         points.clear();
         points.reserve(vis.mesh().edges.size() * n_close_points);
@@ -273,12 +260,12 @@ int MainBody(const ProgramOptionVariables &pov) {
         if (points.size() > pov.max_points) {
             points.resize(pov.max_points);
         }
-        if (!SaveAndDrawPoints(points, point_path_no_ext, "close_to_edge_mid_points", drawer)) {
+        if (!SaveAndDrawPoints(points, point_path_no_ext, "NearM", drawer, pov.draw)) {
             return EXIT_FAILURE;
         }
     }
 
-    {   // Get random points.
+    {   // Generate points inside the bounding box of the map (BB).
         auto rng = std::mt19937(pov.random_seed);
         points.clear();
         points.reserve(pov.max_points);
@@ -289,12 +276,12 @@ int MainBody(const ProgramOptionVariables &pov) {
         if (points.size() > pov.max_points) {
             points.resize(pov.max_points);
         }
-        if (!SaveAndDrawPoints(points, point_path_no_ext, "random", drawer)) {
+        if (!SaveAndDrawPoints(points, point_path_no_ext, "BB", drawer, pov.draw)) {
             return EXIT_FAILURE;
         }
     }
 
-    {   // Get random interior points.
+    {   // Generate points inside map (In).
         auto rng = std::mt19937(pov.random_seed);
         points.clear();
         points.reserve(pov.max_points);
@@ -306,10 +293,11 @@ int MainBody(const ProgramOptionVariables &pov) {
         if (points.size() > pov.max_points) {
             points.resize(pov.max_points);
         }
-        if (!SaveAndDrawPoints(points, point_path_no_ext, "random_interior", drawer)) {
+        if (!SaveAndDrawPoints(points, point_path_no_ext, "In", drawer, pov.draw)) {
             return EXIT_FAILURE;
         }
     }
+    LOGF_INF("DONE (Generating points). It took " << clock.TimeInSeconds() << " seconds.");
 
     return EXIT_SUCCESS;
 }
