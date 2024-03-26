@@ -73,7 +73,7 @@ void AddProgramOptions(
          "Output pdf file.")
         ("map-scale",
          po::value(&pov.map_scale)->default_value(pov.map_scale),
-         "Map coordinates are scaled by this factor when loading the map (< 0.0 ~ no scaling or scale is loaded with the map).")
+         "Map coordinates are scaled by this factor when loading the map (<= 0.0 ~ no scaling or scale is loaded with the map).")
         ("x",
          po::value(&pov.x)->default_value(pov.x),
          "X coordinate of the query.")
@@ -82,7 +82,7 @@ void AddProgramOptions(
          "Y coordinate of the query.")
         ("vis-radius",
          po::value(&pov.vis_radius)->default_value(pov.vis_radius),
-         "Limited visibility radius (-1 ~ infinite).")
+         "Limited visibility radius (<= 0.0 ~ infinite).")
         ("reflex-only",
          po::bool_switch(&pov.reflex_only)->default_value(pov.reflex_only),
          "Consider only reflex (non-convex) vertices.")

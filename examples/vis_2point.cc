@@ -74,7 +74,7 @@ void AddProgramOptions(
          "Output pdf file.")
         ("map-scale",
          po::value(&pov.map_scale)->default_value(pov.map_scale),
-         "Map coordinates are scaled by this factor when loading the map (< 0.0 ~ no scaling or scale is loaded with the map).")
+         "Map coordinates are scaled by this factor when loading the map (<= 0.0 ~ no scaling or scale is loaded with the map).")
         ("shoot-ray",
          po::bool_switch(&pov.shoot_ray)->default_value(pov.shoot_ray),
          "Shoot a ray from the source in the direction of the target.")
@@ -92,7 +92,7 @@ void AddProgramOptions(
          "Y coordinate of the target.")
         ("vis-radius",
          po::value(&pov.vis_radius)->default_value(pov.vis_radius),
-         "Limited visibility radius (-1 ~ infinite).");
+         "Limited visibility radius (<= 0.0 ~ infinite).")
 }
 
 trivis_plus::utils::severity_level GetSeverity(const ProgramOptionVariables &pov) {
