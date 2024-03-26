@@ -1,18 +1,11 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-import os
-import json
 import argparse
-import numpy as np
 import datatable as dt
-import matplotlib.pyplot as plt
-import matplotlib.pylab as pl
 
 from pathlib import Path
 from datatable import f
-
-from scipy.interpolate import interp1d
 
 args_parser = argparse.ArgumentParser()
 args_parser.add_argument('-i', '--input_csv_file', type=str, default='csv/*.csv', help='Input table in CSV format.')
@@ -147,26 +140,21 @@ def main(args):
     else:
         print(f'Reading {args.input_csv_file}.')
         tab_main = dt.fread(args.input_csv_file)
-    point_types_renames = {
-        'random_interior': 'rand_in',
-        'random': 'rand',
-        'edge_mid_points': 'edge',
-        'close_to_edge_mid_points': 'edge_close',
-        'on_nodes': 'nodes',
-        'close_to_nodes': 'nodes_close',
-    }
-    for point_type, point_type_new in point_types_renames.items():
-        tab_main[f.points == point_type, 'points'] = point_type_new
+    point_sets_order = [
+        'In',
+        'BB',
+        'Ver',
+        'NearV',
+        'Mid',
+        'NearM',
+    ]
     algorithms_renames = {
-        'cgal_triangular_expansion': 'CGAL-TE',
-        'cgal_triangular_expansion_inexact_constructions': 'CGAL-TE-IC',
-        'cgal_rotational_sweep': 'CGAL-RS',
-        'cgal_rotational_sweep_inexact_constructions': 'CGAL-RS-IC',
-        'cgal_simple_polygon': 'CGAL-SP',
-        'cgal_simple_polygon_inexact_constructions': 'CGAL-SP-IC',
+        'cgal_triangular_expansion': 'CGAL-TEA-CE',
+        'cgal_triangular_expansion_inexact_constructions': 'CGAL-TEA-CI',
+        'cgal_rotational_sweep': 'CGAL-RSA-CE',
+        'cgal_rotational_sweep_inexact_constructions': 'CGAL-RSA-CI',
         'visilibity': 'VisiLibity1',
-        'trivis': 'TřiVis',
-        'trivis_inexact': 'TřiVis-IP',
+        'trivis': 'TriVis',
     }
     for algorithm, algorithm_new in algorithms_renames.items():
         tab_main[f.algorithm == algorithm, 'algorithm'] = algorithm_new
@@ -209,13 +197,12 @@ def main(args):
     tab_results_per_points = compute_summary(tab_main, ['points', 'algorithm'])
     tab_results_per_algorithm = compute_summary(tab_main, ['algorithm'])
     tab_results = dt.rbind(tab_results_per_points, tab_results_per_algorithm, force=True)
-    tab_results[f.points == None, 'points'] = 'all'
+    tab_results[f.points == None, 'points'] = 'Overall'
 
     # Table cosmetics.
     algorithms_order = [algorithm for algorithm in algorithms_renames.values()]
-    points_order = [point_type for point_type in point_types_renames.values()] + ['all']
     tab_temp = dt.Frame()
-    for points in points_order:
+    for points in point_sets_order + ['Overall']:
         for algorithm in algorithms_order:
             tab_temp = dt.rbind(tab_temp, tab_results[(f.points == points) & (f.algorithm == algorithm), :])
     tab_results = tab_temp
