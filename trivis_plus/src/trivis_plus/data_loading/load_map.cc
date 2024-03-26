@@ -10,9 +10,8 @@
 #include "trivis_plus/data_loading/load_map.h"
 
 #include <fstream>
-#include <limits>
-
-#include "trivis/geom/generic_geom_utils.h"
+#include <iostream>
+#include <iomanip>
 
 using namespace trivis_plus;
 using namespace trivis_plus::data_loading;
@@ -25,12 +24,31 @@ bool data_loading::SavePolyMap(
     const std::string &file,
     std::stringstream *info
 ) {
-    // todo: implement this!
-    if (info) *info << "SavePolyMap is not implemented!\n";
-    return false;
+    std::ofstream ofs(file);
+    if (!ofs.is_open()) {
+        if (info) *info << "Cannot open file " << file << " for writing.\n";
+        return false;
+    }
+    ofs << "[SCALE]\n";
+    ofs << "1.0\n";
+    ofs << "[BORDER]\n";
+    for (const auto &p: poly_map.border()) {
+        ofs << std::fixed << std::setprecision(std::numeric_limits<double>::max_digits10) << p.x;
+        ofs << " " << std::fixed << std::setprecision(std::numeric_limits<double>::max_digits10) << p.y;
+        ofs << "\n";
+    }
+    for (const auto &hole: poly_map.holes()) {
+        ofs << "[OBSTACLE]\n";
+        for (const auto &p: hole) {
+            ofs << std::fixed << std::setprecision(std::numeric_limits<double>::max_digits10) << p.x;
+            ofs << " " << std::fixed << std::setprecision(std::numeric_limits<double>::max_digits10) << p.y;
+            ofs << "\n";
+        }
+    }
+    return true;
 }
 
-void LoadMapNewFormat(
+void TryLoadPolyMapNewFormat(
     std::ifstream &ifs,
     PolyMap &poly_map
 ) noexcept(false) {
@@ -104,7 +122,7 @@ void LoadMapNewFormat(
     poly_map = PolyMap(border, holes);
 }
 
-void LoadMap(
+void TryLoadPolyMap(
     std::ifstream &ifs,
     PolyMap &poly_map,
     std::optional<double> scale
@@ -123,7 +141,7 @@ void LoadMap(
     while (true) {
         ifs >> token;
         if (token == "[NAME]") {
-            LoadMapNewFormat(ifs, poly_map);
+            TryLoadPolyMapNewFormat(ifs, poly_map);
             return;
         }
         if (token == "[INFO]") {
@@ -255,7 +273,7 @@ std::optional<trivis::geom::PolyMap> data_loading::LoadPolyMap(
     }
     trivis::geom::PolyMap poly_map;
     try {
-        LoadMap(ifs, poly_map, rescale);
+        TryLoadPolyMap(ifs, poly_map, rescale);
     } catch (const std::exception &e) {
         if (info) *info << "Error while loading " << file << ":\n" << e.what();
         return std::nullopt;

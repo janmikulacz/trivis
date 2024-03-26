@@ -14,7 +14,6 @@
 #include <sstream>
 #include <optional>
 
-#include "trivis/geom/geom_types.h"
 #include "trivis/mesh/tri_mesh.h"
 
 namespace trivis_plus::data_loading {

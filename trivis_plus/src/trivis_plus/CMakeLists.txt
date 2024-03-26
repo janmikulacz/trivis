@@ -9,7 +9,7 @@ find_package(Boost 1.82 REQUIRED COMPONENTS program_options system filesystem lo
 set(TrivisPlus_SRC
         data_loading/load_map.cc
         data_loading/load_mesh.cc
-        data_loading/load_visibility_region.cc
+        data_loading/load_vis_region.cc
         drawing/random_colors.cc
         drawing/drawing.cc
         drawing/fancy_drawing.cc

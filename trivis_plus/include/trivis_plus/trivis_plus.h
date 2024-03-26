@@ -12,7 +12,7 @@
 
 #include "trivis_plus/data_loading/load_map.h"
 #include "trivis_plus/data_loading/load_mesh.h"
-#include "trivis_plus/data_loading/load_visibility_region.h"
+#include "trivis_plus/data_loading/load_vis_region.h"
 
 #include "trivis_plus/drawing/cairo_geom_drawer.h"
 #include "trivis_plus/drawing/colors.h"
