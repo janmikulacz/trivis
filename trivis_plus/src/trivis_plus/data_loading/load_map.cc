@@ -31,14 +31,14 @@ bool data_loading::SavePolyMap(
     }
     ofs << "[SCALE]\n";
     ofs << "1.0\n";
-    ofs << "[BORDER]\n";
+    ofs << "\n[BORDER]\n";
     for (const auto &p: poly_map.border()) {
         ofs << std::fixed << std::setprecision(std::numeric_limits<double>::max_digits10) << p.x;
         ofs << " " << std::fixed << std::setprecision(std::numeric_limits<double>::max_digits10) << p.y;
         ofs << "\n";
     }
     for (const auto &hole: poly_map.holes()) {
-        ofs << "[OBSTACLE]\n";
+        ofs << "\n[OBSTACLE]\n";
         for (const auto &p: hole) {
             ofs << std::fixed << std::setprecision(std::numeric_limits<double>::max_digits10) << p.x;
             ofs << " " << std::fixed << std::setprecision(std::numeric_limits<double>::max_digits10) << p.y;

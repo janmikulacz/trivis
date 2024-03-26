@@ -36,7 +36,7 @@ struct ProgramOptionVariables {
     std::string map_full_path;
     std::string out_dir = DEFAULT_OUT_DIR;
     std::string out_pdf;
-    double map_scale = 0.01;
+    double map_scale = -1.0;
     double x = 10.0;
     double y = 10.0;
     double vis_radius = -1.0;
@@ -73,7 +73,7 @@ void AddProgramOptions(
          "Output pdf file.")
         ("map-scale",
          po::value(&pov.map_scale)->default_value(pov.map_scale),
-         "Map coordinates are scaled by this factor when loading the map.")
+         "Map coordinates are scaled by this factor when loading the map (< 0.0 ~ no scaling or scale is loaded with the map).")
         ("x",
          po::value(&pov.x)->default_value(pov.x),
          "X coordinate of the query.")
@@ -154,7 +154,8 @@ int MainBody(const ProgramOptionVariables &pov) {
 
     LOGF_INF("Loading map from " << pov.map_full_path << ".");
     clock.Restart();
-    auto map = trivis_plus::data_loading::LoadPolyMap(pov.map_full_path, pov.map_scale, &info);
+    std::optional<double> scale = pov.map_scale > 0.0 ? std::make_optional(pov.map_scale) : std::nullopt;
+    auto map = trivis_plus::data_loading::LoadPolyMap(pov.map_full_path, scale, &info);
     if (!map) {
         LOGF_FTL("Error while loading map: '" << info.str() << "'.");
         return EXIT_FAILURE;

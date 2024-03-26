@@ -34,10 +34,10 @@ bool data_loading::SaveVisRegion(
     ofs << " " << std::fixed << std::setprecision(std::numeric_limits<double>::max_digits10) << region.seed.y;
     ofs << " " << (region.seed_id ? region.seed_id.value() : -1);
     ofs << "\n";
-    ofs << "[RADIUS]\n";
+    ofs << "\n[RADIUS]\n";
     ofs << std::fixed << std::setprecision(std::numeric_limits<double>::max_digits10) << (region.radius ? region.radius.value() : -1.0);
     ofs << "\n";
-    ofs << "[VERTICES]\n";
+    ofs << "\n[VERTICES]\n";
     ofs << region.vertices.size() << "\n";
     for (int i = 0; i < region.vertices.size(); ++i) {
         const auto &v = region.vertices[i];

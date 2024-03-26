@@ -2,6 +2,7 @@ list(APPEND examples vis_2point)
 list(APPEND examples vis_region)
 list(APPEND examples vis_vertices)
 list(APPEND examples vis_graph)
+list(APPEND examples sandbox)
 foreach (example ${examples})
     add_executable(${example} ${example}.cc)
     target_compile_definitions(${example} PRIVATE
