@@ -1,5 +1,5 @@
 /**
- * File:   evaluate_method.cc
+ * File:   eval_method.cc
  *
  * Date:   22.01.2024
  * Author: Jan Mikula
@@ -35,7 +35,6 @@ namespace fs = boost::filesystem;
 namespace dr = trivis_plus::drawing;
 
 struct ProgramOptionVariables {
-    std::string map_type;
     std::string map_name;
     std::string map_extension = ".txt";
     std::string map_dir = DEFAULT_MAP_DIR;
@@ -70,7 +69,6 @@ void AddProgramOptions(
 ) {
     options_description.add_options()
         ("help,h", "Produce this help message. \n (*) Overwrites options: all.")
-        ("map-type", po_value(pov.map_type), "Map type.")
         ("map-name", po_value(pov.map_name), "Map name.")
         ("map-extension", po_value(pov.map_extension), "Map extension.")
         ("map-dir", po_value(pov.map_dir), "Map directory.")
@@ -305,8 +303,7 @@ int MainBody(const ProgramOptionVariables &pov) {
     iss >> n_points;
 
     if (!pov.out_file_append) {
-        ofs << "map_type";
-        ofs << ",map_name";
+        ofs << "map_name";
         ofs << ",map_area";
         ofs << ",points";
         ofs << ",algorithm";
@@ -335,8 +332,7 @@ int MainBody(const ProgramOptionVariables &pov) {
     }
 
     std::ostringstream oss;
-    oss << pov.map_type;
-    oss << "," << pov.map_name;
+    oss << pov.map_name;
     oss << "," << std::fixed << std::setprecision(std::numeric_limits<double>::max_digits10) << map_area_clipper;
     oss << "," << pov.points_type;
     oss << "," << pov.algorithm_name;

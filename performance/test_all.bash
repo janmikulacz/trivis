@@ -17,7 +17,7 @@ timeouts["cgal_rotational_sweep"]=60
 timeouts["cgal_rotational_sweep_inexact_constructions"]=60
 timeouts["visilibity"]=3600 # doesn't need timeout
 
-# Load the points types from point_sets.txt.
+# Load the points set names from point_sets.txt.
 point_sets=()
 while IFS= read -r line; do
   point_sets+=("$line")

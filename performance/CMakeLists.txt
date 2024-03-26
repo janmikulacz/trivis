@@ -30,6 +30,6 @@ if (TRIVIS_BUILD_TRIVIS_INEXACT)
 
 endif()
 
-add_executable(evaluate_method evaluate_method.cc)
-target_compile_definitions(evaluate_method PRIVATE ${COMPILE_DEFINITIONS})
-target_link_libraries(evaluate_method PUBLIC TrivisPlus)
+add_executable(eval_method eval_method.cc)
+target_compile_definitions(eval_method PRIVATE ${COMPILE_DEFINITIONS})
+target_link_libraries(eval_method PUBLIC TrivisPlus)

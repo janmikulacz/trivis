@@ -129,6 +129,27 @@ The example project loads maps from simple TXT files with the following structur
 ./build-Release/examples/vis_graph --help # to see all options
 ```
 
+## Run Performance Tests from IROS 2024 Paper
+```bash
+conda create env -f conda/trivis_with_boost_cairo_cgal.yml # unless you have it already
+conda activate trivis # unless already activated
+export TRIVIS_BUILD_TRIVIS_PLUS=1 # to build the dependency
+export TRIVIS_BUILD_PERFORMANCE=1 # to build the performance tests
+bash build.bash # to run the build
+# todo: copy the map instances to data/maps
+cd performance # go to the performance directory
+bash gen_points_all.bash # to generate the test points
+bash test_all.bash # to construct the visibility regions
+bash eval_all.bash # to compare the results with the reference
+cd results # go to the results directory
+conda create env -f conda/datatable.yml # unless you have it already
+conda activate datatable
+# todo: process the results
+cd ../.. # go back to the root directory
+conda deactivate # to deactivate the datatable environment
+conda deactivate # to deactivate the trivis environment
+```
+
 ## Troubleshooting
 
 In case of any problems, please write an email to [jan.mikula@cvut.cz](mailto:jan.mikula@cvut.cz).
