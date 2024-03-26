@@ -92,7 +92,7 @@ void AddProgramOptions(
          "Y coordinate of the target.")
         ("vis-radius",
          po::value(&pov.vis_radius)->default_value(pov.vis_radius),
-         "Limited visibility radius (<= 0.0 ~ infinite).")
+         "Limited visibility radius (<= 0.0 ~ infinite).");
 }
 
 trivis_plus::utils::severity_level GetSeverity(const ProgramOptionVariables &pov) {
