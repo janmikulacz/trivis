@@ -5,7 +5,7 @@
 ## About
 
 TřiVis, named after the Czech word 'tři' (meaning 'three') and the term 'visibility', is a C++ library for computing visibility-related structures in 2D polygonal environments.
-It is based on the triangular expansion algorithm [1,2], which uses preprocessing to convert the input polygonal environment into a triangular mesh, and then traverses the mesh to compute visibility regions, visibility graphs, ray-shooting queries, and other visibility-related structures.
+It is based on the triangular expansion algorithm ([Bungiu et al., 2014](https://arxiv.org/abs/1403.3905); [Xu and Güting, 2015](https://doi.org/10.1007/s10707-014-0213-7)), which uses preprocessing to convert the input polygonal environment into a triangular mesh, and then traverses the mesh to compute visibility regions, visibility graphs, ray-shooting queries, and other visibility-related structures.
 
 ## Definitions
 
@@ -31,10 +31,10 @@ TřiVis supports all the queries defined above, each with a specialized, easy-to
 
 ### Worst-Case Query Complexity
 
-The main feature of TřiVis is the triangular expansion algorithm [1,2], which provides $O(n)$ query time for two-point visibility and ray-shooting queries, $O(nh)$ for visibility region and visible vertices/points queries, $O(n^2h)$ for the vertex-vertex visibility graph, and $O(pnh)$ for point-point and point-vertex visibility graphs. 
+The main feature of TřiVis is the triangular expansion algorithm ([Bungiu et al., 2014](https://arxiv.org/abs/1403.3905); [Xu and Güting, 2015](https://doi.org/10.1007/s10707-014-0213-7)), which provides $O(n)$ query time for two-point visibility and ray-shooting queries, $O(nh)$ for visibility region and visible vertices/points queries, $O(n^2h)$ for the vertex-vertex visibility graph, and $O(pnh)$ for point-point and point-vertex visibility graphs. 
 Here, $n$ is the number of vertices in the polygonal environment, $h$ is the number of holes, and $p$ is the number of input interior points. 
 
-It is important to note that the query time complexity is worst-case, and the actual query time may be significantly lower in practice. This is especially true for TřiVis, as the triangular expansion algorithm is known to exhibit output-sensitive behavior to some extent, traversing only the triangles that are partially or fully visible from the query point [1].
+It is important to note that the query time complexity is worst-case, and the actual query time may be significantly lower in practice. This is especially true for TřiVis, as the triangular expansion algorithm is known to exhibit output-sensitive behavior to some extent, traversing only the triangles that are partially or fully visible from the query point ([Bungiu et al., 2014](https://arxiv.org/abs/1403.3905)).
 
 ### Efficient Limited-Range Queries
 
@@ -44,11 +44,11 @@ This can significantly reduce the query time for queries with a highly restricte
 ### Fast Point Location
 
 TřiVis employs a bucketing technique to accelerate point location queries, which are essential for visibility-related queries.
-Using the bucketing technique from [3], TřiVis achieves $O(1)$ expected query time for point location queries.
+Using the bucketing technique from ([Edahiro et al., 1984](https://doi.org/10.1145/357337.357338)), TřiVis achieves $O(1)$ expected query time for point location queries.
 
 ### Robustness and Reliability
 
-TřiVis relies on floating-point arithmetic and incorporates a unique combination of adaptive robust geometry predicates [4] and $\epsilon$-geometry [5].
+TřiVis relies on floating-point arithmetic and incorporates a unique combination of adaptive robust geometry predicates ([Shewchuk, 1997](https://doi.org/10.1007/PL00009321)) and $\epsilon$-geometry ([Fortune and Van Wyk, 1993](https://doi.org/10.1145/160985.161015)).
 Thanks to this combination, TřiVis is characterized by reliable and predictable behavior, free from crashing or infinite looping, providing consistent outputs that align with user expectations, as supported by the results of our evaluation on exceptionally complex query instances.
 For more information, refer to the [Performance Evaluation](#performance-evaluation) section.
 
@@ -253,8 +253,3 @@ conda deactivate # to deactivate the trivis environment
 ## License
 
 ## Troubleshooting
-
-## References
-
-
-
