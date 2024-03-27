@@ -4,8 +4,8 @@
 
 ## About
 
-TřiVis, named after the Czech word 'tři' (meaning 'three') and the term 'visibility', is a C++ library for computing visibility-related structures in 2D polygonal environments.
-It is based on the triangular expansion algorithm ([Bungiu et al., 2014](https://arxiv.org/abs/1403.3905); [Xu and Güting, 2015](https://doi.org/10.1007/s10707-014-0213-7)), which uses preprocessing to convert the input polygonal environment into a triangular mesh, and then traverses the mesh to compute visibility regions, visibility graphs, ray-shooting queries, and other visibility-related structures.
+TřiVis, named after the Czech word *'tři'* (meaning *'three'*) and the term *'visibility'*, is a C++ library for computing visibility-related structures in 2D polygonal environments.
+It is based on the *triangular expansion algorithm* ([Bungiu et al., 2014](https://arxiv.org/abs/1403.3905); [Xu and Güting, 2015](https://doi.org/10.1007/s10707-014-0213-7)), which uses preprocessing to convert the input polygonal environment into a triangular mesh, and then traverses the mesh to compute visibility regions, visibility graphs, ray-shooting queries, and other visibility-related structures.
 
 ## Definitions
 
@@ -31,10 +31,10 @@ TřiVis supports all the queries defined above, each with a specialized, easy-to
 
 ### Worst-Case Query Complexity
 
-The main feature of TřiVis is the triangular expansion algorithm ([Bungiu et al., 2014](https://arxiv.org/abs/1403.3905); [Xu and Güting, 2015](https://doi.org/10.1007/s10707-014-0213-7)), which provides $O(n)$ query time for two-point visibility and ray-shooting queries, $O(nh)$ for visibility region and visible vertices/points queries, $O(n^2h)$ for the vertex-vertex visibility graph, and $O(pnh)$ for point-point and point-vertex visibility graphs. 
+The main feature of TřiVis is the *triangular expansion algorithm* ([Bungiu et al., 2014](https://arxiv.org/abs/1403.3905); [Xu and Güting, 2015](https://doi.org/10.1007/s10707-014-0213-7)), which provides $O(n)$ query time for two-point visibility and ray-shooting queries, $O(nh)$ for visibility region and visible vertices/points queries, $O(n^2h)$ for the vertex-vertex visibility graph, and $O(pnh)$ for point-point and point-vertex visibility graphs. 
 Here, $n$ is the number of vertices in the polygonal environment, $h$ is the number of holes, and $p$ is the number of input interior points. 
 
-It is important to note that the query time complexity is worst-case, and the actual query time may be significantly lower in practice. This is especially true for TřiVis, as the triangular expansion algorithm is known to exhibit output-sensitive behavior to some extent, traversing only the triangles that are partially or fully visible from the query point ([Bungiu et al., 2014](https://arxiv.org/abs/1403.3905)).
+It is important to note that the query time complexity is worst-case, and the actual query time may be significantly lower in practice. This is especially true for TřiVis, as the *triangular expansion algorithm* is known to exhibit output-sensitive behavior to some extent, traversing only the triangles that are partially or fully visible from the query point ([Bungiu et al., 2014](https://arxiv.org/abs/1403.3905)).
 
 ### Efficient Limited-Range Queries
 
@@ -55,7 +55,7 @@ For more information, refer to the [Performance Evaluation](#performance-evaluat
 ### Performance on Large Instances
 
 TřiVis has been tested on 34 complex polygonal environments with up to 8,320 vertices and 679 holes by computing visibility regions for 1,000 interior points in each environment.
-With an average query time of 9±6μs, TřiVis outperforms other tested implementations by at least an order of magnitude, while keeping the preprocessing time below 20 ms for the tested polygonal environments.
+With an average query time of 9±6μs, TřiVis outperforms other tested implementations by at least an order of magnitude, while keeping the preprocessing time below 20ms for the tested polygonal environments.
 For more information, refer to the [Performance Evaluation](#performance-evaluation) section.
 
 ## Building and Linking the Library
@@ -90,6 +90,8 @@ For more information, refer to the respective [TřiVis+](#třivis) and [Examples
 
 ## Basic Usage
 
+### Initialization
+
 To use the library in your C++ project, include the main header file:
 ```C++
 #include "trivis/trivis.h"
@@ -109,6 +111,9 @@ To inspect it, you can access the mesh directly:
 ```C++
 const trivis::mesh::TriMesh &mesh = vis.mesh();
 ```
+
+### Computing Visibility Queries
+
 To perform visibility-related queries, you need to provide the query point, the point location result, and the visibility range (if limited).
 ```C++
 trivis::geom::FPoint query;
@@ -122,7 +127,7 @@ if (plr.has_value()) {
 std::optional<double> range;
 // TODO: Set the visibility range or leave it unlimited.
 ```
-Two-point visibility query:
+**Two-point visibility query:**
 ```C++
 trivis::geom::FPoint target;
 // TODO: Fill the target.
@@ -130,7 +135,7 @@ if (plr.has_value()) {
     bool is_visible = vis.IsVisible(query, plr.value(), target, range);
 }
 ```
-Ray-shooting query:
+**Ray-shooting query:**
 ```C++
 trivis::geom::FPoint direction;
 // TODO: Fill the direction.
@@ -143,7 +148,7 @@ if (plr.has_value()) {
     }
 }
 ```
-Visibility region query:
+**Visibility region query:**
 ```C++
 if (plr.has_value()) {
     trivis::AbstractVisibilityRegion avr = vis.VisibilityRegion(query, plr.value(), range);
@@ -158,13 +163,13 @@ if (plr.has_value()) {
     trivis::geom::FPolygon polygon_approx = vis_region->ToPolygon();
 }
 ```
-Visible vertices query:
+**Visible vertices query:**
 ```C++
 if (plr.has_value()) {
     std::vector<int> visible_vertices = vis.VisibleVertices(query, plr.value(), range);
 }
 ```
-Visible points query:
+**Visible points query:**
 ```C++
 std::vector<trivis::geom::FPoint> input_points;
 // TODO: Fill the input points.
@@ -177,7 +182,7 @@ if (plr.has_value()) {
     std::vector<int> visible_points = vis.VisiblePoints(query, plr.value(), input_points, input_plrs, range);
 }
 ```
-Visibility graphs:
+**Visibility graphs:**
 ```C++
 std::vector<std::vector<int>> vertex_vertex_graph = vis.VertexVertexVisibilityGraph(range);
 std::vector<std::vector<int>> point_point_graph = vis.PointPointVisibilityGraph(input_points, input_plrs, range);
