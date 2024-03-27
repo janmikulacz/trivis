@@ -1,4 +1,6 @@
-# TřiVis: Versatile, Reliable, and High-Performance Tool for Computing Visibility in Polygonal Environments
+# TřiVis
+
+***Versatile, Reliable, and High-Performance Tool for Computing Visibility in Polygonal Environments***
 
 ## About
 
