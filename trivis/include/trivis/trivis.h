@@ -275,23 +275,23 @@ public:
     std::vector<int> VisibleVertices(
         const geom::FPoint &q,
         const PointLocationResult &q_location,
-        const std::vector<bool> *tabu_vertices = nullptr,
         std::optional<double> radius = std::nullopt,
+        const std::optional<std::vector<bool>> &tabu_vertices = std::nullopt,
         ExpansionStats *stats = nullptr
     ) const;
 
     std::vector<int> VisibleVertices(
         const geom::FPoint &q,
         int q_triangle_id,
-        const std::vector<bool> *tabu_vertices = nullptr,
         std::optional<double> radius = std::nullopt,
+        const std::optional<std::vector<bool>> &tabu_vertices = std::nullopt,
         ExpansionStats *stats = nullptr
     ) const;
 
     std::vector<int> VisibleVertices(
         int ver_id,
-        const std::vector<bool> *tabu_vertices = nullptr,
         std::optional<double> radius = std::nullopt,
+        const std::optional<std::vector<bool>> &tabu_vertices = std::nullopt,
         ExpansionStats *stats = nullptr
     ) const;
 
@@ -343,30 +343,30 @@ public:
     /// ##### VISIBILITY: VISIBILITY GRAPHS ##### ///
 
     std::vector<std::vector<int>> VertexVertexVisibilityGraph(
-        const std::vector<bool> *tabu_vertices = nullptr,
         std::optional<double> radius = std::nullopt,
+        const std::optional<std::vector<bool>> &tabu_vertices = std::nullopt,
         ExpansionStats *stats = nullptr
     ) const;
 
     std::vector<std::vector<bool>> VertexVertexVisibilityGraphBool(
-        const std::vector<bool> *tabu_vertices = nullptr,
         std::optional<double> radius = std::nullopt,
+        const std::optional<std::vector<bool>> &tabu_vertices = std::nullopt,
         ExpansionStats *stats = nullptr
     ) const;
 
     std::vector<std::vector<int>> PointVertexVisibilityGraph(
         const geom::FPoints &points,
         const std::vector<std::optional<PointLocationResult>> &points_locations,
-        const std::vector<bool> *tabu_vertices = nullptr,
         std::optional<double> radius = std::nullopt,
+        const std::optional<std::vector<bool>> &tabu_vertices = std::nullopt,
         ExpansionStats *stats = nullptr
     ) const;
 
     std::vector<std::vector<bool>> PointVertexVisibilityGraphBool(
         const geom::FPoints &points,
         const std::vector<std::optional<PointLocationResult>> &points_locations,
-        const std::vector<bool> *tabu_vertices = nullptr,
         std::optional<double> radius = std::nullopt,
+        const std::optional<std::vector<bool>> &tabu_vertices = std::nullopt,
         ExpansionStats *stats = nullptr
     ) const;
 
@@ -523,7 +523,7 @@ private:
         int curr_edge_tri_id,
         double sq_radius,
         std::vector<int> &visible_vertices,
-        const std::vector<bool> *tabu_vertices = nullptr,
+        const std::optional<std::vector<bool>> &tabu_vertices = std::nullopt,
         ExpansionStats *stats = nullptr
     ) const;
 

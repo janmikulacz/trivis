@@ -232,16 +232,16 @@ int MainBody(const ProgramOptionVariables &pov) {
     }
 
     int n_ver = static_cast<int>(vis.mesh().vertices.size());
-    std::vector<bool> tabu_vertices(n_ver, false);
+    auto tabu_vertices = std::make_optional<std::vector<bool>>(std::vector<bool>(n_ver, false));
     if (pov.reflex_only || pov.convex_only) {
         LOGF_INF("Finding reflex vertices.");
         clock.Restart();
         for (int ver_id = 0; ver_id < n_ver; ++ver_id) {
             auto neighbors = trivis::mesh::GetNeighborVertices(vis.mesh(), ver_id);
             if (neighbors.size() != 2 || trivis::mesh::IsReflex(vis.mesh(), neighbors[0], ver_id, neighbors[1])) {
-                tabu_vertices[ver_id] = !pov.reflex_only;
+                tabu_vertices.value()[ver_id] = !pov.reflex_only;
             } else {
-                tabu_vertices[ver_id] = !pov.convex_only;
+                tabu_vertices.value()[ver_id] = !pov.convex_only;
             }
         }
         LOGF_INF("DONE. It took " << clock.TimeInSeconds() << " seconds.");
@@ -250,11 +250,11 @@ int MainBody(const ProgramOptionVariables &pov) {
     LOGF_INF("Constructing the visibility graph.");
     std::vector<std::vector<int>> vis_graph;
     if (pov.point_vertex) {
-        vis_graph = vis.PointVertexVisibilityGraph(query_points.value(), query_pls.value(), &tabu_vertices, vis_radius);
+        vis_graph = vis.PointVertexVisibilityGraph(query_points.value(), query_pls.value(), vis_radius, tabu_vertices);
     } else if (pov.point_point) {
         vis_graph = vis.PointPointVisibilityGraph(query_points.value(), query_pls.value(), vis_radius);
     } else {
-        vis_graph = vis.VertexVertexVisibilityGraph(&tabu_vertices, vis_radius);
+        vis_graph = vis.VertexVertexVisibilityGraph(vis_radius, tabu_vertices);
     }
     LOGF_INF("DONE. It took " << clock.TimeInSeconds() << " seconds.");
 
@@ -308,7 +308,7 @@ int MainBody(const ProgramOptionVariables &pov) {
     if (!pov.point_point) {
         for (int ver_id = 0; ver_id < n_ver; ++ver_id) {
             const auto &ver_p = vis.mesh().point(ver_id);
-            if (!tabu_vertices[ver_id]) {
+            if (!tabu_vertices.value()[ver_id]) {
                 drawer.DrawPoint(ver_p, 0.3, dr::kColorRed);
             }
         }

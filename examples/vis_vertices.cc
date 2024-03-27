@@ -190,16 +190,16 @@ int MainBody(const ProgramOptionVariables &pov) {
     LOGF_INF("DONE. It took " << clock.TimeInSeconds() << " seconds.");
 
     int n_ver = static_cast<int>(vis.mesh().vertices.size());
-    std::vector<bool> tabu_vertices(n_ver, false);
+    auto tabu_vertices = std::make_optional<std::vector<bool>>(std::vector<bool>(n_ver, false));
     if (pov.reflex_only || pov.convex_only) {
         LOGF_INF("Finding reflex vertices.");
         clock.Restart();
         for (int ver_id = 0; ver_id < n_ver; ++ver_id) {
             auto neighbors = trivis::mesh::GetNeighborVertices(vis.mesh(), ver_id);
             if (neighbors.size() != 2 || trivis::mesh::IsReflex(vis.mesh(), neighbors[0], ver_id, neighbors[1])) {
-                tabu_vertices[ver_id] = !pov.reflex_only;
+                tabu_vertices.value()[ver_id] = !pov.reflex_only;
             } else {
-                tabu_vertices[ver_id] = !pov.convex_only;
+                tabu_vertices.value()[ver_id] = !pov.convex_only;
             }
         }
         LOGF_INF("DONE. It took " << clock.TimeInSeconds() << " seconds.");
@@ -211,7 +211,7 @@ int MainBody(const ProgramOptionVariables &pov) {
     } else {
         LOGF_INF("Finding visible vertices from " << query << ".");
         clock.Restart();
-        visible_vertices = vis.VisibleVertices(query, query_pl.value(), &tabu_vertices, vis_radius);
+        visible_vertices = vis.VisibleVertices(query, query_pl.value(), vis_radius, tabu_vertices);
         LOGF_INF("DONE. It took " << clock.TimeInSeconds() << " seconds.");
     }
 

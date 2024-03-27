@@ -486,16 +486,16 @@ bool Trivis::IsVisible(
 std::vector<int> Trivis::VisibleVertices(
     const geom::FPoint &q,
     const PointLocationResult &q_location,
-    const std::vector<bool> *tabu_vertices,
     std::optional<double> radius,
+    const std::optional<std::vector<bool>> &tabu_vertices,
     ExpansionStats *stats
 ) const {
     if (q_location.snap_to_vertices.empty()) {
-        return VisibleVertices(q, q_location.tri_id, tabu_vertices, radius, stats);
+        return VisibleVertices(q, q_location.tri_id, radius, tabu_vertices, stats);
     } else {
         std::vector<int> ret;
         for (int ver_id: q_location.snap_to_vertices) {
-            auto ret_v = VisibleVertices(ver_id, tabu_vertices, radius, stats);
+            auto ret_v = VisibleVertices(ver_id, radius, tabu_vertices, stats);
             if (ret.empty()) {
                 ret = std::move(ret_v);
             } else {
@@ -509,8 +509,8 @@ std::vector<int> Trivis::VisibleVertices(
 std::vector<int> Trivis::VisibleVertices(
     const geom::FPoint &q,
     int q_triangle_id,
-    const std::vector<bool> *tabu_vertices,
     std::optional<double> radius,
+    const std::optional<std::vector<bool>> &tabu_vertices,
     ExpansionStats *stats
 ) const {
 
@@ -552,8 +552,8 @@ std::vector<int> Trivis::VisibleVertices(
 
 std::vector<int> Trivis::VisibleVertices(
     int ver_id,
-    const std::vector<bool> *tabu_vertices,
     std::optional<double> radius,
+    const std::optional<std::vector<bool>> &tabu_vertices,
     ExpansionStats *stats
 ) const {
 
@@ -835,8 +835,8 @@ std::vector<int> Trivis::VisiblePoints(
 /// ##### VISIBILITY: VISIBILITY GRAPHS ##### ///
 
 std::vector<std::vector<int>> Trivis::VertexVertexVisibilityGraph(
-    const std::vector<bool> *tabu_vertices,
     std::optional<double> radius,
+    const std::optional<std::vector<bool>> &tabu_vertices,
     ExpansionStats *stats
 ) const {
 
@@ -854,7 +854,7 @@ std::vector<std::vector<int>> Trivis::VertexVertexVisibilityGraph(
         if (tabu_vertices && tabu_vertices->operator[](ver_id)) {
             continue;
         }
-        ret[ver_id] = VisibleVertices(ver_id, tabu_vertices, radius, stats_temp_ptr);
+        ret[ver_id] = VisibleVertices(ver_id, radius, tabu_vertices, stats_temp_ptr);
         if (stats) {
             stats->num_expansions += stats_temp_ptr->num_expansions;
             stats->max_recursion_depth = std::max(stats->max_recursion_depth, stats_temp_ptr->max_recursion_depth);
@@ -864,8 +864,8 @@ std::vector<std::vector<int>> Trivis::VertexVertexVisibilityGraph(
 }
 
 std::vector<std::vector<bool>> Trivis::VertexVertexVisibilityGraphBool(
-    const std::vector<bool> *tabu_vertices,
     std::optional<double> radius,
+    const std::optional<std::vector<bool>> &tabu_vertices,
     ExpansionStats *stats
 ) const {
 
@@ -884,7 +884,7 @@ std::vector<std::vector<bool>> Trivis::VertexVertexVisibilityGraphBool(
         if (tabu_vertices && tabu_vertices->operator[](ver_id)) {
             continue;
         }
-        auto visible_vertices = VisibleVertices(ver_id, tabu_vertices, radius, stats_temp_ptr);
+        auto visible_vertices = VisibleVertices(ver_id, radius, tabu_vertices, stats_temp_ptr);
         for (int visible_v_id: visible_vertices) {
             ret[ver_id][visible_v_id] = ret[visible_v_id][ver_id] = true;
         }
@@ -899,8 +899,8 @@ std::vector<std::vector<bool>> Trivis::VertexVertexVisibilityGraphBool(
 std::vector<std::vector<int>> Trivis::PointVertexVisibilityGraph(
     const geom::FPoints &points,
     const std::vector<std::optional<PointLocationResult>> &points_locations,
-    const std::vector<bool> *tabu_vertices,
     std::optional<double> radius,
+    const std::optional<std::vector<bool>> &tabu_vertices,
     ExpansionStats *stats
 ) const {
 
@@ -920,7 +920,7 @@ std::vector<std::vector<int>> Trivis::PointVertexVisibilityGraph(
         if (!p_location) {
             continue;
         }
-        ret[point_id] = VisibleVertices(p, *p_location, tabu_vertices, radius, stats_temp_ptr);
+        ret[point_id] = VisibleVertices(p, *p_location, radius, tabu_vertices, stats_temp_ptr);
         if (stats) {
             stats->num_expansions += stats_temp_ptr->num_expansions;
             stats->max_recursion_depth = std::max(stats->max_recursion_depth, stats_temp_ptr->max_recursion_depth);
@@ -933,8 +933,8 @@ std::vector<std::vector<int>> Trivis::PointVertexVisibilityGraph(
 std::vector<std::vector<bool>> Trivis::PointVertexVisibilityGraphBool(
     const geom::FPoints &points,
     const std::vector<std::optional<PointLocationResult>> &points_locations,
-    const std::vector<bool> *tabu_vertices,
     std::optional<double> radius,
+    const std::optional<std::vector<bool>> &tabu_vertices,
     ExpansionStats *stats
 ) const {
 
@@ -954,7 +954,7 @@ std::vector<std::vector<bool>> Trivis::PointVertexVisibilityGraphBool(
         if (!p_location) {
             continue;
         }
-        std::vector<int> visible_vertices = VisibleVertices(p, *p_location, tabu_vertices, radius, stats_temp_ptr);
+        std::vector<int> visible_vertices = VisibleVertices(p, *p_location, radius, tabu_vertices, stats_temp_ptr);
         for (int ver_id: visible_vertices) {
             ret[point_id][ver_id] = true;
         }
@@ -1759,7 +1759,7 @@ void Trivis::ExpandEdgeVisibleVertices(
     int curr_edge_tri_id,
     double sq_radius,
     std::vector<int> &visible_vertices,
-    const std::vector<bool> *tabu_vertices,
+    const std::optional<std::vector<bool>> &tabu_vertices,
     ExpansionStats *stats
 ) const {
 
