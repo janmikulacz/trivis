@@ -27,6 +27,102 @@ It is based on the triangular expansion algorithm [1,2], which uses preprocessin
 
 ## Usage
 
+To use the library in your C++ project, include the main header file:
+```C++
+#include "trivis/trivis.h"
+```
+TřiVis's main API is the `trivis::Trivis` class, which provides methods for visibility-related queries.
+It is initialized with a polygonal environment represented by a `trivis::geom::PolyMap` object.
+```C++
+trivis::Trivis vis;
+{   // Scope for the environment.
+    trivis::geom::PolyMap environment;
+    // TODO: Fill the environment.
+    vis = trivis::Trivis{std::move(environment)};
+}   // The environment was moved to vis.
+```
+The triangular mesh of the environment has just been constructed.
+To inspect it, you can access the mesh directly:
+```C++
+const trivis::mesh::TriMesh &mesh = vis.mesh();
+```
+To perform visibility-related queries, you need to provide the query point, the point location result, and the visibility range (if limited).
+```C++
+trivis::geom::FPoint query;
+// TODO: Fill the query.
+std::optional<trivis::Trivis::PointLocationResult> plr = vis.LocatePoint(query);
+if (plr.has_value()) {
+    // The query point is inside the environment.
+} else {
+    // The query point is outside the environment.
+}
+std::optional<double> range;
+// TODO: Set the visibility range or leave it unlimited.
+```
+Two-point visibility query:
+```C++
+if (plr.has_value()) {
+    trivis::geom::FPoint target;
+    // TODO: Fill the target.
+    bool is_visible = vis.IsVisible(query, plr.value(), target, range);
+}
+```
+Ray-shooting query:
+```C++
+if (plr.has_value()) {
+    trivis::geom::FPoint direction;
+    // TODO: Fill the direction.
+    std::optional<trivis::Trivis::RayShootingResult> rsr = vis.ShootRay(query, plr.value(), direction, range);
+    if (rsr.has_value()) {
+        trivis::geom::FPoint intersection = rsr->p;
+    } else {
+        // The intersection point is outside the visibility range.
+    }
+}
+```
+Visibility region query:
+```C++
+if (plr.has_value()) {
+    trivis::AbstractVisibilityRegion avr = vis.VisibilityRegion(query, plr.value(), range);
+    trivis::RadialVisibilityRegion rvr = vis.ToRadialVisibilityRegion(avr);
+    if (range.has_value()) {
+        rvr.IntersectWithCircleCenteredAtSeed();
+    }
+    // Optional post-processing:
+    if (range.has_value()) {
+        vis_region.SampleArcEdges(M_PI / 180.0);
+    }
+    trivis::geom::FPolygon polygon_approx = vis_region->ToPolygon();
+}
+```
+Visible vertices query:
+```C++
+if (plr.has_value()) {
+    std::vector<int> visible_vertices = vis.VisibleVertices(query, plr.value(), range);
+}
+```
+Visible points query:
+```C++
+if (plr.has_value()) {
+    std::vector<trivis::geom::FPoint> input_points;
+    // TODO: Fill the input points.
+    std::vector<std::optional<trivis::Trivis::PointLocationResult>> input_plrs;
+    input_plrs.reserve(input_points.size());
+    for (const auto &p : input_points) {
+        input_plrs.push_back(vis.LocatePoint(p));
+    }
+    std::vector<int> visible_points = vis.VisiblePoints(query, plr.value(), input_points, input_plrs, range);
+}
+```
+Visibility graphs:
+```C++
+if (plr.has_value()) {
+    std::vector<std::vector<int>> vertex_vertex_graph = vis.VertexVertexVisibilityGraph(range);
+    std::vector<std::vector<int>> point_point_graph = vis.PointPointVisibilityGraph(input_points, input_plrs, range);
+    std::vector<std::vector<int>> point_vertex_graph = vis.PointVertexVisibilityGraph(input_points, input_plrs, range);
+}
+```
+
 ## Documentation
 
 ## Examples
