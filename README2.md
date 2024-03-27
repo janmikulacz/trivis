@@ -23,9 +23,32 @@ It is based on the triangular expansion algorithm [1,2], which uses preprocessin
 
 ## Features
 
+### Supported Queries
+
+TřiVis supports all the queries defined above, each with a specialized, easy-to-use API.
+
+### Worst-Case Query Complexity
+
+The main feature of TřiVis is the triangular expansion algorithm [1,2], which provides $O(n)$ query time for two-point visibility and ray-shooting queries, $O(nh)$ for visibility region and visible vertices/points queries, $O(n^2h)$ for the vertex-vertex visibility graph, and $O(pnh)$ for point-point and point-vertex visibility graphs. 
+Here, $n$ is the number of vertices in the polygonal environment, $h$ is the number of holes, and $p$ is the number of input interior points. 
+
+It is important to note that the query time complexity is worst-case, and the actual query time may be significantly lower in practice. This is especially true for TřiVis, as the triangular expansion algorithm is known to exhibit output-sensitive behavior to some extent, traversing only the triangles that are partially or fully visible from the query point [1].
+
+### Efficient Limited-Range Queries
+
+TřiVis supports limited-range queries, employing an early termination mechanism to avoid traversing unnecessary triangles of the triangular mesh.
+This can significantly reduce the query time for queries with a highly restricted visibility range relative to the average size of the open space in the environment.
+
+### Reliability
+
+### Performance on Large Instances
+
+### Fast Point Location
+
+
 ## Building and Linking the Library
 
-TřiVis is built with CMake.
+TřiVis is built with [CMake](https://cmake.org/).
 To make the library available to your C++ project, you can copy the source code in the [trivis](trivis) directory and include it in your CMake project.
 ```CMake
 # In your CMakeLists.txt:
@@ -33,7 +56,27 @@ add_subdirectory(path_to_trivis) # Add the library to your project.
 target_link_libraries(your_target PUBLIC Trivis) # Link the library to your target.
 ```
 
-## Usage
+The build has been tested with the [GCC](https://gcc.gnu.org/) 12.3.0 compiler and [CMake](https://cmake.org/) 3.28.1 on the [Ubuntu](https://ubuntu.com/) 20.04.6 LTS operating system.
+For your convenience, the [conda/trivis.yml](conda/trivis.yml) file describes [Conda](https://docs.conda.io/en/latest/) environment with the exact compiler and CMake versions used by the authors.
+
+To create and test the environment, run the following in the root directory of this repository:
+```bash
+# Assuming you have Conda installed:
+conda env create -f conda/trivis.yml # Create the environment.
+conda activate trivis # Activate the environment.
+gcc --version # Check the compiler version (12.3.0).
+cmake --version # Check the CMake version (3.28.1).
+mkdir build # Create the build directory.
+cd build # Go to the build directory.
+cmake ../trivis # Configure the build (ignore the warnings).
+make # Build the library.
+```
+
+Apart from TřiVis's source code, this repository also contains TřiVis+, an extension adding support for data loading and visualization, and an example project depending on TřiVis+, demonstrating the library's usage.
+
+For more information, refer to the respective [TřiVis+](#třivis) and [Examples](#examples) sections. 
+
+## Basic Usage
 
 To use the library in your C++ project, include the main header file:
 ```C++
