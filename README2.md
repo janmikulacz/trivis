@@ -28,6 +28,7 @@ It is based on the triangular expansion algorithm [1,2], which uses preprocessin
 TřiVis is built with CMake.
 To make the library available to your C++ project, you can copy the source code in the [trivis](trivis) directory and include it in your CMake project.
 ```CMake
+# In your CMakeLists.txt:
 add_subdirectory(path_to_trivis) # Add the library to your project.
 target_link_libraries(your_target PUBLIC Trivis) # Link the library to your target.
 ```
