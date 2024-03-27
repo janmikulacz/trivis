@@ -1,107 +1,192 @@
-# ***TřiVis***: Triangular Visibility C++ Library
+# TřiVis: Versatile, Reliable, and High-Performance Tool for Computing Visibility in Polygonal Environments
 
-## About ***TřiVis***
+## About
 
-***TřiVis*** is a **fast**, **robust**, **versatile**, **self-contained** C++ library for computing **2D visibility-related structures**.
+TřiVis, named after the Czech word 'tři' (meaning 'three') and the term 'visibility', is a C++ library for computing visibility-related structures in 2D polygonal environments.
+It is based on the triangular expansion algorithm [1,2], which uses preprocessing to convert the input polygonal environment into a triangular mesh, and then traverses the mesh to compute visibility regions, visibility graphs, ray-shooting queries, and other visibility-related structures.
 
-* **Fast:** It was evaluated on complex map instances.
-  The full results are in [1].
-  For example, on a map with *n=1055* (no. of vertices), *h=63* (no. of holes), ***TřiVis*** computes visibility regions for 1 million random query points in 4.51 microseconds on average.
-  On a map with *n=8068*, *h=675*, it takes 10.23 microseconds on average.
-  *Experimental setup:* personal laptop Legion 5 Pro 16ITH6H with Intel Core i7-11800H (4.60 GHz), 16 GB of RAM, and running Ubuntu 20.04.5 LTS.
-* **Robust:** It uses robust geometry. It handles close points, queries on map vertices or edges.
-* **Versatile:** In many ways. It computes visibility regions, all visible vertices of the map, two-point visibility, and visibility graphs.
-  It can consider a limited visibility range, which results in lower run times.
-  Visibility regions come with edge and vertex flags to provide topology information.
-* **Self-contained:**
-  It can be easily included by other projects.
-  The library is internally dependent on [*Triangle*](https://www.cs.cmu.edu/~quake/triangle.html), [*Robust geometric predicates*](https://github.com/dengwirda/robust-predicate), and [
-  *Clipper2*](http://www.angusj.com/clipper2/Docs/Overview.htm).
-  However, thanks to being open-source, ***TřiVis*** directly contains their source files.
+## Definitions
 
-### The Name
+- **Polygonal Environment:** A 2D environment consisting of a single outer boundary and zero or more inner boundaries (holes), where each boundary is a simple polygon.
+- **Triangular Mesh:** A mesh of triangles including adjacency information that covers the polygonal environment, where the intersection of any two triangles is either empty, a common edge, or a common vertex.
+- **Point Location Query:** Determines the triangle of the triangular mesh that contains a given point in the polygonal environment or reports that the point is outside the environment.
+- **Visibility:** Two points in the polygonal environment are visible to each other if the line segment connecting them lies entirely within the environment (touching the boundaries is allowed).
+- **Two-Point Visibility Query:** Determines whether two given points in the polygonal environment are visible to each other.
+- **Ray-Shooting Query:** Determines an intersection point of a ray starting at a given interior point in a given direction with the boundary of the polygonal environment.
+- **Visibility Region Query:** Determines the region of the polygonal environment visible from a given interior point.
+- **Visible Vertices Query:** Determines the subset of vertices of the polygonal environment visible from a given interior point.
+- **Visible Points Query:** Determines the subset of given interior points that are visible from another given interior point.
+- **Vertex-Vertex Visibility Graph:** A graph where vertices represent the vertices of the polygonal environment, and edges represent visibility between pairs of vertices.
+- **Point-Point Visibility Graph:** A graph where vertices represent given interior points, and edges represent visibility between pairs of points.
+- **Point-Vertex Visibility Graph:** A graph where vertices represent both given interior points and vertices of the polygonal environment, and edges represent visibility between pairs of points and vertices.
+- **Limited Visibility Range:** A constraint on the visibility queries that restricts the visibility range to a given distance from the query point.
 
-We originally introduced ***TřiVis*** under the name ***TriVis*** in [2].
-***TriVis*** stands for ***Tri***angular **Vis**ibility.
-The third version of the library was presented in [1] under the name ***TřiVis***.
-***Tři*** means ***three*** in Czech.
-The correct Czech pronunciation of ***TřiVis*** is */tr̝̊ɪˈvɪz/*, but */trɪˈvɪz/* is also fine.
-Since the third version, ***TřiVis*** is the library's official name.
+## Main Features
 
-## Building ***TřiVis*** and Running the Examples
+### Supported Queries
 
-### Example Project
+TřiVis supports all the queries defined above, each with a specialized, easy-to-use API.
 
-***TřiVis*** is distributed as part of example project [`trivis_plus`](trivis_plus) with additional dependencies: [Boost](https://www.boost.org/) (used for logging, filesystem, argument parsing, etc.)
-and [Cairo](https://www.cairographics.org/) (used for drawing).
-Please use the links to access the dependencies' websites and follow the installation instructions.
+### Worst-Case Query Complexity
 
-### The Library Itself
+The main feature of TřiVis is the triangular expansion algorithm [1,2], which provides $O(n)$ query time for two-point visibility and ray-shooting queries, $O(nh)$ for visibility region and visible vertices/points queries, $O(n^2h)$ for the vertex-vertex visibility graph, and $O(pnh)$ for point-point and point-vertex visibility graphs. 
+Here, $n$ is the number of vertices in the polygonal environment, $h$ is the number of holes, and $p$ is the number of input interior points. 
 
-***TřiVis*** itself is located in [`trivis_plus/libs/trivis`](trivis_plus/libs/trivis).
-Any project can easily include ***TřiVis*** simply by copying its files, adding `add_subdirectory(path/to/trivis)` to its CMakeLists.txt, and linking its executables or libraries by
-adding `target_link_libraries(my_exec TriVis)`.
-Exactly the same is done by the example project.
+It is important to note that the query time complexity is worst-case, and the actual query time may be significantly lower in practice. This is especially true for TřiVis, as the triangular expansion algorithm is known to exhibit output-sensitive behavior to some extent, traversing only the triangles that are partially or fully visible from the query point [1].
 
-### Building the Project and Running the Examples
+### Efficient Limited-Range Queries
 
-The example project can be built easily by running [`bash build.bash`](build.bash).
-File [`build.bash.out`](build.bash.out) shows the standard output of a successful build.
-After running the build script, four executables will appear in the build directory: `example_visibility_graph`, `example_visibility_map_vertices`, `example_visibility_region`,
-and `example_visibility_two_points`.
-Try running each of the executables without any arguments.
-Then check the [`out`](out) directory containing a nice picture generated by each run.
-A picture is worth a thousand words.
-After checking the pictures, we are sure you will understand what ***TřiVis*** can do.
+TřiVis supports limited-range queries, employing an early termination mechanism to avoid traversing unnecessary triangles of the triangular mesh.
+This can significantly reduce the query time for queries with a highly restricted visibility range relative to the average size of the open space in the environment.
 
-### More About the Examples
+### Fast Point Location
 
-Play with the examples!
-Running `example_<...> --help` will show available options and their default values.
-For example, you can change the map, query points' coordinates, and the visibility radius.
-The examples load maps from the [data/maps](data/maps) directory by default.
-To change the map, you can just use the map name, e.g., `--map-name potholes`.
-Be careful if you want to try the maps starting with `scene_<...>`.
-For these, you need to include `--map-scale 1` (default value is `0.01`).
+TřiVis employs a bucketing technique to accelerate point location queries, which are essential for visibility-related queries.
+Using the bucketing technique from [3], TřiVis achieves $O(1)$ expected query time for point location queries.
 
-After you are done running the examples for fun, check their source files in [trivis_plus](trivis_plus).
-The code is self-explanatory and will give you a good idea of how to use ***TřiVis***.
+### Robustness and Reliability
 
-### Map Format
+TřiVis relies on floating-point arithmetic and incorporates a unique combination of adaptive robust geometry predicates [4] and $\epsilon$-geometry [5].
+Thanks to this combination, TřiVis is characterized by reliable and predictable behavior, free from crashing or infinite looping, providing consistent outputs that align with user expectations, as supported by the results of our evaluation on exceptionally complex query instances.
+For more information, refer to the [Performance Evaluation](#performance-evaluation) section.
 
-The example project loads maps from simple TXT files with the following structure:
+### Performance on Large Instances
 
-````
-           # NOTE: Comments starting with # are not part of the structure.
-           # NOTE: Angle brackets <> are substitutes for some user-defined values.
-           
-[SCALE]    # Default scale of the map (can be overwritten by --map-scale).
-<scale>    # float
-           
-[BORDER]   # Vertices (x, y coordinates) of the free space boundary.
-<x0> <y0>  # float float
-...        
-<xn> <yn>  # float float
-           
-           # NOTE: Only one definition of [BORDER] is possible.
-           
-[OBSTACLE] # Vertices (x, y coordinates) of the first obstacle, i.e., hole inside of [BORDER].
-<x0> <y0>  # float float
-...        # NOTE: All vertices must by inside [BORDER].
-<xn> <yn>  # float float
-           
-...        # The number of obstacles is not limited.
-           
-[OBSTACLE] # Vertices (x, y coordinates) of the last obstacle.
-<x0> <y0>  # float float
-...        # NOTE: All vertices must by inside [BORDER].
-<xn> <yn>  # float float
-           
-           # NOTE: All defined polygons must be simple (i.e., no self-intersections)! 
-           # NOTE: The polygons also cannot intersect each other!
-````
+TřiVis has been tested on 34 complex polygonal environments with up to 8,320 vertices and 679 holes by computing visibility regions for 1,000 interior points in each environment.
+With an average query time of 9±6μs, TřiVis outperforms other tested implementations by at least an order of magnitude, while keeping the preprocessing time below 20 ms for the tested polygonal environments.
+For more information, refer to the [Performance Evaluation](#performance-evaluation) section.
 
-## Example Notes
+## Building and Linking the Library
+
+TřiVis is built with [CMake](https://cmake.org/).
+To make the library available to your C++ project, you can copy the source code in the [trivis](trivis) directory and include it in your CMake project.
+```CMake
+# In your CMakeLists.txt:
+add_subdirectory(path_to_trivis) # Add the library to your project.
+target_link_libraries(your_target PUBLIC Trivis) # Link the library to your target.
+```
+
+The build has been tested with the [GCC](https://gcc.gnu.org/) 12.3.0 compiler and [CMake](https://cmake.org/) 3.28.1 on the [Ubuntu](https://ubuntu.com/) 20.04.6 LTS operating system.
+For your convenience, the [conda/trivis.yml](conda/trivis.yml) file describes [Conda](https://docs.conda.io/en/latest/) environment with the exact compiler and CMake versions used by the authors.
+
+To create and test the environment, run the following in the root directory of this repository:
+```bash
+# Assuming you have Conda installed:
+conda env create -f conda/trivis.yml # Create the environment.
+conda activate trivis # Activate the environment.
+gcc --version # Check the compiler version (12.3.0).
+cmake --version # Check the CMake version (3.28.1).
+mkdir build # Create the build directory.
+cd build # Go to the build directory.
+cmake ../trivis # Configure the build (ignore the warnings).
+make # Build the library.
+```
+
+Apart from TřiVis's source code, this repository also contains TřiVis+, an extension adding support for data loading and visualization, and an example project depending on TřiVis+, demonstrating the library's usage.
+
+For more information, refer to the respective [TřiVis+](#třivis) and [Examples](#examples) sections. 
+
+## Basic Usage
+
+To use the library in your C++ project, include the main header file:
+```C++
+#include "trivis/trivis.h"
+```
+TřiVis's main API is the `trivis::Trivis` class, which provides methods for visibility-related queries.
+It is initialized with a polygonal environment represented by a `trivis::geom::PolyMap` object.
+```C++
+trivis::Trivis vis;
+{   // Scope for the environment.
+    trivis::geom::PolyMap environment;
+    // TODO: Fill the environment.
+    vis = trivis::Trivis{std::move(environment)};
+}   // The environment was moved to vis.
+```
+The triangular mesh of the environment has just been constructed.
+To inspect it, you can access the mesh directly:
+```C++
+const trivis::mesh::TriMesh &mesh = vis.mesh();
+```
+To perform visibility-related queries, you need to provide the query point, the point location result, and the visibility range (if limited).
+```C++
+trivis::geom::FPoint query;
+// TODO: Fill the query.
+std::optional<trivis::Trivis::PointLocationResult> plr = vis.LocatePoint(query);
+if (plr.has_value()) {
+    // The query point is inside the environment.
+} else {
+    // The query point is outside the environment.
+}
+std::optional<double> range;
+// TODO: Set the visibility range or leave it unlimited.
+```
+Two-point visibility query:
+```C++
+trivis::geom::FPoint target;
+// TODO: Fill the target.
+if (plr.has_value()) {
+    bool is_visible = vis.IsVisible(query, plr.value(), target, range);
+}
+```
+Ray-shooting query:
+```C++
+trivis::geom::FPoint direction;
+// TODO: Fill the direction.
+if (plr.has_value()) {
+    std::optional<trivis::Trivis::RayShootingResult> rsr = vis.ShootRay(query, plr.value(), direction, range);
+    if (rsr.has_value()) {
+        trivis::geom::FPoint intersection = rsr->p;
+    } else {
+        // The intersection point is outside the visibility range.
+    }
+}
+```
+Visibility region query:
+```C++
+if (plr.has_value()) {
+    trivis::AbstractVisibilityRegion avr = vis.VisibilityRegion(query, plr.value(), range);
+    trivis::RadialVisibilityRegion rvr = vis.ToRadialVisibilityRegion(avr);
+    if (range.has_value()) {
+        rvr.IntersectWithCircleCenteredAtSeed();
+    }
+    // Optional post-processing:
+    if (range.has_value()) {
+        vis_region.SampleArcEdges(M_PI / 180.0);
+    }
+    trivis::geom::FPolygon polygon_approx = vis_region->ToPolygon();
+}
+```
+Visible vertices query:
+```C++
+if (plr.has_value()) {
+    std::vector<int> visible_vertices = vis.VisibleVertices(query, plr.value(), range);
+}
+```
+Visible points query:
+```C++
+std::vector<trivis::geom::FPoint> input_points;
+// TODO: Fill the input points.
+std::vector<std::optional<trivis::Trivis::PointLocationResult>> input_plrs;
+input_plrs.reserve(input_points.size());
+for (const auto &p : input_points) {
+    input_plrs.push_back(vis.LocatePoint(p));
+}
+if (plr.has_value()) {
+    std::vector<int> visible_points = vis.VisiblePoints(query, plr.value(), input_points, input_plrs, range);
+}
+```
+Visibility graphs:
+```C++
+std::vector<std::vector<int>> vertex_vertex_graph = vis.VertexVertexVisibilityGraph(range);
+std::vector<std::vector<int>> point_point_graph = vis.PointPointVisibilityGraph(input_points, input_plrs, range);
+std::vector<std::vector<int>> point_vertex_graph = vis.PointVertexVisibilityGraph(input_points, input_plrs, range);
+```
+
+## Structure and Dependencies
+
+## TřiVis+
+
+## Examples
 
 ```bash
 # Play with the 2-point/ray-shooting example:
@@ -129,7 +214,8 @@ The example project loads maps from simple TXT files with the following structur
 ./build-Release/examples/vis_graph --help # to see all options
 ```
 
-## Replicating the Performance Tests from the IROS 2024 Paper
+## Performance Evaluation
+
 ```bash
 conda create env -f conda/trivis_with_boost_cairo_cgal.yml # unless you have it already
 conda activate trivis # unless already activated
@@ -156,13 +242,17 @@ conda deactivate # to deactivate the datatable environment
 conda deactivate # to deactivate the trivis environment
 ```
 
-## Troubleshooting
+## Documentation
 
-In case of any problems, please write an email to [jan.mikula@cvut.cz](mailto:jan.mikula@cvut.cz).
+## Version History
+
+## Planned Development
+
+## License
+
+## Troubleshooting
 
 ## References
 
-[1] Mikula, J., & Kulich, M. (2023?). **Optimizing Mesh to Improve the Triangular Expansion Algorithm for Computing Visibility Regions.** Submitted to *SN Computer Science* on November 2022.
 
-[2] Mikula, J., & Kulich, M. (2022). **Triangular Expansion Revisited: Which Triangulation Is the Best?** In: *Proceedings of the 19th International Conference on Informatics in Control, Automation
-and Robotics - ICINCO*, pp 313-319.
+
