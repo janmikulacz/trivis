@@ -23,7 +23,14 @@ It is based on the triangular expansion algorithm [1,2], which uses preprocessin
 
 ## Features
 
-## Structure and Dependencies
+## Building and Linking the Library
+
+TřiVis is built with CMake.
+To make the library available to your C++ project, you can copy the source code in the [trivis](trivis) directory and include it in your CMake project.
+```CMake
+add_subdirectory(path_to_trivis) # Add the library to your project.
+target_link_libraries(your_target PUBLIC Trivis) # Link the library to your target.
+```
 
 ## Usage
 
@@ -121,7 +128,9 @@ std::vector<std::vector<int>> point_point_graph = vis.PointPointVisibilityGraph(
 std::vector<std::vector<int>> point_vertex_graph = vis.PointVertexVisibilityGraph(input_points, input_plrs, range);
 ```
 
-## Documentation
+## Structure and Dependencies
+
+## TřiVis+
 
 ## Examples
 
@@ -178,6 +187,8 @@ cd ../.. # go back to the root directory
 conda deactivate # to deactivate the datatable environment
 conda deactivate # to deactivate the trivis environment
 ```
+
+## Documentation
 
 ## Version History
 
