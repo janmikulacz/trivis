@@ -61,17 +61,17 @@ std::optional<double> range;
 ```
 Two-point visibility query:
 ```C++
+trivis::geom::FPoint target;
+// TODO: Fill the target.
 if (plr.has_value()) {
-    trivis::geom::FPoint target;
-    // TODO: Fill the target.
     bool is_visible = vis.IsVisible(query, plr.value(), target, range);
 }
 ```
 Ray-shooting query:
 ```C++
+trivis::geom::FPoint direction;
+// TODO: Fill the direction.
 if (plr.has_value()) {
-    trivis::geom::FPoint direction;
-    // TODO: Fill the direction.
     std::optional<trivis::Trivis::RayShootingResult> rsr = vis.ShootRay(query, plr.value(), direction, range);
     if (rsr.has_value()) {
         trivis::geom::FPoint intersection = rsr->p;
@@ -103,24 +103,22 @@ if (plr.has_value()) {
 ```
 Visible points query:
 ```C++
+std::vector<trivis::geom::FPoint> input_points;
+// TODO: Fill the input points.
+std::vector<std::optional<trivis::Trivis::PointLocationResult>> input_plrs;
+input_plrs.reserve(input_points.size());
+for (const auto &p : input_points) {
+    input_plrs.push_back(vis.LocatePoint(p));
+}
 if (plr.has_value()) {
-    std::vector<trivis::geom::FPoint> input_points;
-    // TODO: Fill the input points.
-    std::vector<std::optional<trivis::Trivis::PointLocationResult>> input_plrs;
-    input_plrs.reserve(input_points.size());
-    for (const auto &p : input_points) {
-        input_plrs.push_back(vis.LocatePoint(p));
-    }
     std::vector<int> visible_points = vis.VisiblePoints(query, plr.value(), input_points, input_plrs, range);
 }
 ```
 Visibility graphs:
 ```C++
-if (plr.has_value()) {
-    std::vector<std::vector<int>> vertex_vertex_graph = vis.VertexVertexVisibilityGraph(range);
-    std::vector<std::vector<int>> point_point_graph = vis.PointPointVisibilityGraph(input_points, input_plrs, range);
-    std::vector<std::vector<int>> point_vertex_graph = vis.PointVertexVisibilityGraph(input_points, input_plrs, range);
-}
+std::vector<std::vector<int>> vertex_vertex_graph = vis.VertexVertexVisibilityGraph(range);
+std::vector<std::vector<int>> point_point_graph = vis.PointPointVisibilityGraph(input_points, input_plrs, range);
+std::vector<std::vector<int>> point_vertex_graph = vis.PointVertexVisibilityGraph(input_points, input_plrs, range);
 ```
 
 ## Documentation
