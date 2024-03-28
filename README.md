@@ -14,21 +14,25 @@ ray-shooting queries, and other visibility-related structures.
 
 - [Definitions](#definitions)
 - [Main Features](#main-features)
-    - [Supported Queries](#supported-queries)
-    - [Worst-Case Query Complexity](#worst-case-query-complexity)
-    - [Efficient Limited-Range Queries](#efficient-limited-range-queries)
-    - [Fast Point Location](#fast-point-location)
-    - [Robustness and Reliability](#robustness-and-reliability)
-    - [Performance on Large Instances](#performance-on-large-instances)
-- [Building and Linking the Library](#building-and-linking-the-library)
+  - [Supported Queries](#supported-queries)
+  - [Worst-Case Query Complexity](#worst-case-query-complexity)
+  - [Efficient Limited-Range Queries](#efficient-limited-range-queries)
+  - [Fast Point Location](#fast-point-location)
+  - [Robustness and Reliability](#robustness-and-reliability)
+  - [Performance on Large Instances](#performance-on-large-instances)
+- [Building and Linking](#building-and-linking)
 - [Basic Usage](#basic-usage)
-    - [Initialization](#initialization)
-    - [Computing Visibility Queries](#computing-visibility-queries)
+  - [Initialization](#initialization)
+  - [Computing Visibility Queries](#computing-visibility-queries)
 - [Dependencies](#dependencies)
 - [Repository Contents](#repository-contents)
-- [TřiVis Codebase](#trivis-codebase)
-- [TřiVis+](#třivis)
+- [TřiVis Codebase](#třivis-codebase)
+- [TřiVis+](#třivis-1)
 - [Examples](#examples)
+- [Performance Evaluation](#performance-evaluation)
+  - [Replication Guide](#replication-guide)
+- [Documentation](#documentation)
+- [License](#license)
 
 ## Definitions
 
@@ -93,7 +97,7 @@ With an average query time of 9±6μs, TřiVis outperforms other tested implemen
 tested polygonal environments.
 For more information, refer to the [Performance Evaluation](#performance-evaluation) section.
 
-## Building and Linking the Library
+## Building and Linking
 
 TřiVis is built with [CMake](https://cmake.org/).
 
@@ -123,10 +127,10 @@ cmake ../trivis
 make
 ```
 
-Apart from TřiVis's source code, this repository also contains TřiVis+, an extension adding support for data loading and visualization, and an example project depending on TřiVis+,
+Apart from TřiVis's source code, this repository also contains [TřiVis+](#třivis-1), an extension adding support for data loading and visualization, and an [Examples](#examples) project depending on TřiVis+,
 demonstrating the library's usage.
 
-For more information, refer to the respective [TřiVis+](#třivis) and [Examples](#examples) sections.
+For more information, refer to the [Repository Contents](#repository-contents) section.
 
 ## Basic Usage
 
@@ -267,13 +271,13 @@ If you use TřiVis, please make sure to comply with the licenses of the third-pa
 
 This repository includes TřiVis, as well as some extensions, example projects and utilities:
 
-- [conda/](conda): Contains convenience [Conda](https://docs.conda.io/en/latest/) environment files.
+- [conda/](conda): Convenience [Conda](https://docs.conda.io/en/latest/) environment files.
 - [data/](data): A data directory structure, initially empty except for a single example map, for storing polygonal environments (maps), meshes, and query points. The
   example projects assume this directory structure.
-- [examples/](examples): Contains an example project demonstrating the usage of TřiVis. For more information, refer to the [Examples](#examples) section.
-- [performance/](performance): Contains a performance evaluation project. For more information, refer to the [Performance Evaluation](#performance-evaluation) section.
-- [trivis/](trivis): The main TřiVis library source code.
-- [trivis_plus/](trivis_plus): Contains TřiVis+, an extension adding support for data loading and visualization. For more information, refer to the [TřiVis+](#třivis) section.
+- [examples/](examples): [Example project demonstrating the usage of TřiVis.](#examples)
+- [performance/](performance): [Performance evaluation project.](#performance-evaluation)
+- [trivis/](trivis): [TřiVis library (core).](#třivis-codebase)
+- [trivis_plus/](trivis_plus): [TřiVis+ library, an extension adding support for data loading and visualization.](#třivis-1)
 - [build.bash](build.bash): A convenience script for building the library and example projects.
 - [CMakelists.txt](CMakeLists.txt): The main CMake configuration file for building the library and example projects.
 - [LICENSE.md](LICENSE.md): The license file for TřiVis.
@@ -359,8 +363,8 @@ Alternatively, you may already have all the necessary dependencies installed.
 
 Now, you need to set the environment variables to configure the build:
 ```bash
-export TRIVIS_BUILD_TRIVIS_PLUS=0
-export TRIVIS_BUILD_EXAMPLES=0
+export TRIVIS_BUILD_TRIVIS_PLUS=1
+export TRIVIS_BUILD_EXAMPLES=1
 ```
 Alternatively, you may modify the [setup.bash](setup.bash) to fix the configuration and run `source setup.bash`.
 
@@ -421,38 +425,108 @@ It is built together with the examples by default, and you can run it as follows
 
 ## Performance Evaluation
 
+TřiVis, or more specifically, its computation of visibility regions, has been extensively evaluated against several competing implementations on a dataset of 34 complex polygonal environments.
+
+**The competing implementations were:**
+- **CGAL-TEA-CE:** [CGAL's triangular expansion algorithm](https://doc.cgal.org/latest/Visibility_2/classCGAL_1_1Triangular__expansion__visibility__2.html) (CGAL version 5.6) with [exact constructions](https://doc.cgal.org/latest/Kernel_23/classCGAL_1_1Exact__predicates__exact__constructions__kernel.html).
+- **CGAL-TEA-CI:** [CGAL's triangular expansion algorithm](https://doc.cgal.org/latest/Visibility_2/classCGAL_1_1Triangular__expansion__visibility__2.html) (CGAL version 5.6) with [inexact constructions](https://doc.cgal.org/latest/Kernel_23/classCGAL_1_1Exact__predicates__inexact__constructions__kernel.html).
+- **CGAL-RSA-CE:** [CGAL's rotational sweep algorithm](https://doc.cgal.org/latest/Visibility_2/classCGAL_1_1Rotational__sweep__visibility__2.html) (CGAL version 5.6) with [exact constructions](https://doc.cgal.org/latest/Kernel_23/classCGAL_1_1Exact__predicates__exact__constructions__kernel.html).
+- **CGAL-RSA-CI:** [CGAL's rotational sweep algorithm](https://doc.cgal.org/latest/Visibility_2/classCGAL_1_1Rotational__sweep__visibility__2.html) (CGAL version 5.6) with [inexact constructions](https://doc.cgal.org/latest/Kernel_23/classCGAL_1_1Exact__predicates__inexact__constructions__kernel.html).
+- [**VisiLibity1**](https://karlobermeyer.github.io/VisiLibity1/).
+
+**The dataset was derived from the [Iron Harvest](https://bitbucket.org/shortestpathlab/benchmarks/src/master/poly-maps/iron-harvest/) dataset ([Harabor et al., 2022](https://doi.org/10.1609/socs.v15i1.21770)).**
+We have only preprocessed the dataset to TřiVis's input format by selecting the largest polygon per map, including its holes, and discarding the remaining polygons (mainly artifacts).
+If you are going to use the dataset, please give proper attribution to the authors of the original dataset.
+
+
+The evaluation is detailed in a manuscript currently (as of March 2024) submitted to the 2024 IEEE/RSJ International Conference on Intelligent Robots and Systems (IROS).
+
+Here, we provide a guide on how to replicate the performance tests from the manuscript.
+
+### Replication Guide
+
+**Build the project:**
+
+The performance evaluation project is located in the [performance/](performance) directory.
+It is dependent on the TřiVis+ extension, and includes two additional dependencies:
+- [CGAL](https://www.cgal.org/) (version 5.6), which can be installed system-wide or in a [Conda](https://docs.conda.io/en/latest/) environment.
+- [VisiLibity1](https://karlobermeyer.github.io/VisiLibity1/), which is included in the [performance/lib/](performance/lib) directory.
+
+To build the project, you may first need to create the respective Conda environment:
 ```bash
-conda create env -f conda/trivis_with_boost_cairo_cgal.yml # unless you have it already
-conda activate trivis # unless already activated
-export TRIVIS_BUILD_TRIVIS_PLUS=1 # to build the dependency
-export TRIVIS_BUILD_PERFORMANCE=1 # to build the performance tests
-bash build.bash # to run the build
-# creates the build-Release directory with the executables
-# todo: copy the map instances to data/maps
-cd performance # go to the performance directory
-bash gen_points_all.bash # to generate the test points
-# generates the test points in the ../data/points directory (also saves the CDT mesh for each map in the ../data/meshes directory)
-bash test_all.bash # to construct the visibility regions
-# generates the raw outputs in the outputs directory 
-bash eval_all.bash # to compare the results with the reference
-# generates CSV files with the evaluation results in the results/csv directory
-rm outputs/* # you can now remove the raw outputs
-cd results # go to the results directory
-conda create env -f conda/datatable.yml # unless you have it already
-conda activate datatable
-python process1.py # to process the results
-# generates the results.csv file, you can now inspect it
-cd ../.. # go back to the root directory
-conda deactivate # to deactivate the datatable environment
-conda deactivate # to deactivate the trivis environment
+conda env create -f conda/trivis_boost_cairo_cgal.yml
+conda activate trivis
 ```
+Alternatively, you may already have all the necessary dependencies installed.
+
+Now, you need to set the environment variables to configure the build:
+```bash
+export TRIVIS_BUILD_TRIVIS_PLUS=1
+export TRIVIS_BUILD_PERFORMANCE=1
+```
+Alternatively, you may modify the [setup.bash](setup.bash) to fix the configuration and run `source setup.bash`.
+
+Building the project is now as simple as running:
+```bash
+bash build.bash
+```
+This will create the `build-Release` directory with the executables located in the `build-Release/performance` directory.
+
+**Get the dataset:**
+
+Download the dataset from [here](https://imr.ciirc.cvut.cz/uploads/Downloads/trivis_performance_dataset.zip) and extract it to the [data/maps/](data/maps) directory.
+
+**Generate the test points:**
+
+The following will generate the test points in the [data/points/](data/points) directory and save the CDT mesh for each map in the [data/meshes/](data/meshes) directory:
+
+```bash
+cd performance
+bash gen_points_all.bash
+```
+
+**Construct the visibility regions:**
+
+The following will construct the visibility regions by all the implementations and save the raw outputs in the [performance/outputs/](performance/outputs) directory:
+
+```bash
+bash test_all.bash # this may take several hours
+```
+
+**Compare the results with the reference implementation (CGAL-TEA-CE):**
+
+The following will compare the results with the reference implementation and save the evaluation results in the [performance/results/csv/](performance/results/csv) directory:
+
+```bash
+bash eval_all.bash # this may take several minutes
+rm outputs/* # you can now remove the raw outputs
+```
+
+**Process the results:**
+
+The results are processed with [datatable](https://datatable.readthedocs.io/en/latest/).
+To use it, you may need to create a Conda environment with the [conda/datatable.yml](conda/datatable.yml) file:
+
+```bash
+conda create env -f ../conda/datatable.yml
+conda activate datatable
+```
+
+Now, you can process the results:
+
+```bash
+cd results
+python process1.py
+```
+
+This will generate the `results.csv` file in the [performance/results/](performance/results) directory, which you can inspect and compare with the authors' results located in the [performance/results/authors_results.csv](performance/results/authors_results.csv) file.
 
 ## Documentation
 
-## Version History
-
-## Planned Development
+Currently, TřiVis is not documented in detail beyond this README file.
+The reason is simple: the authors did not have the time to write the documentation yet.
+However, the authors hope that thanks to simplicity of the API, the [Basic Usage](#basic-usage) section, and the examples in the [examples/](examples) directory (further documented in the [Examples](#examples) section), you should be able to start using TřiVis without major issues.
 
 ## License
 
-## Troubleshooting
+Please see the [LICENSE.md](LICENSE.md) file for the license of TřiVis.
