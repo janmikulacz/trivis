@@ -30,7 +30,9 @@ ray-shooting queries, and other visibility-related structures.
 - [TřiVis+](#třivis-1)
 - [Examples](#examples)
 - [Performance Evaluation](#performance-evaluation)
-  - [Replication Guide](#replication-guide)
+  - [Replication Guide (Performance Evaluation)](#replication-guide-performance-evaluation)
+- [Mesh Optimization](#mesh-optimization)
+  - [Replication Guide (Mesh Optimization)](#replication-guide-mesh-optimization)
 - [Documentation](#documentation)
 - [License](#license)
 
@@ -178,7 +180,7 @@ std::optional<double> range;
 // TODO: Set the visibility range or leave it unlimited.
 ```
 
-**Two-point visibility query:**
+#### Two-Point Visibility Query
 
 ```C++
 trivis::geom::FPoint target;
@@ -188,7 +190,7 @@ if (plr.has_value()) {
 }
 ```
 
-**Ray-shooting query:**
+#### Ray-Shooting Query
 
 ```C++
 trivis::geom::FPoint direction;
@@ -203,7 +205,7 @@ if (plr.has_value()) {
 }
 ```
 
-**Visibility region query:**
+#### Visibility Region Query
 
 ```C++
 if (plr.has_value()) {
@@ -220,7 +222,7 @@ if (plr.has_value()) {
 }
 ```
 
-**Visible vertices query:**
+#### Visible Vertices Query
 
 ```C++
 if (plr.has_value()) {
@@ -228,7 +230,7 @@ if (plr.has_value()) {
 }
 ```
 
-**Visible points query:**
+#### Visible Points Query
 
 ```C++
 std::vector<trivis::geom::FPoint> input_points;
@@ -243,7 +245,7 @@ if (plr.has_value()) {
 }
 ```
 
-**Visibility graphs:**
+#### Visibility Graphs
 
 ```C++
 std::vector<std::vector<int>> vertex_vertex_graph = vis.VertexVertexVisibilityGraph(range);
@@ -275,6 +277,7 @@ This repository includes TřiVis, as well as some extensions, example projects a
 - [data/](data): A data directory structure, initially empty except for a single example map, for storing polygonal environments (maps), meshes, and query points. The
   example projects assume this directory structure.
 - [examples/](examples): [Example project demonstrating the usage of TřiVis.](#examples)
+- [mesh_optim/](mesh_optim): [Mesh optimization project.](#mesh-optimization)
 - [performance/](performance): [Performance evaluation project.](#performance-evaluation)
 - [trivis/](trivis): [TřiVis library (core).](#třivis-codebase)
 - [trivis_plus/](trivis_plus): [TřiVis+ library, an extension adding support for data loading and visualization.](#třivis-1)
@@ -380,7 +383,8 @@ When experimenting with the examples, the default behavior is that the input pol
 
 Next are some examples of how to run the example executables.
 
-**2-Point/Ray-Shooting Example:**
+#### 2-Point/Ray-Shooting Example
+
 ```bash
 ./build-Release/examples/vis_2point 
 ./build-Release/examples/vis_2point --vis-radius 10
@@ -388,7 +392,7 @@ Next are some examples of how to run the example executables.
 ./build-Release/examples/vis_2point --help # to see all options
 ```
 
-**Visibility Region Example:**
+#### Visibility Region Example
 ```bash
 ./build-Release/examples/vis_region
 ./build-Release/examples/vis_region --vis-radius 8
@@ -397,7 +401,7 @@ Next are some examples of how to run the example executables.
 ./build-Release/examples/vis_region --help # to see all options
 ```
 
-**Visible Vertices Example:**
+#### Visible Vertices Example
 ```bash
 ./build-Release/examples/vis_vertices
 ./build-Release/examples/vis_vertices --reflex-only
@@ -405,7 +409,7 @@ Next are some examples of how to run the example executables.
 ./build-Release/examples/vis_vertices --help # to see all options
 ```
 
-**Visibility Graph Example:**
+#### Visibility Graph Example
 ```bash
 ./build-Release/examples/vis_graph
 ./build-Release/examples/vis_graph --reflex-only
@@ -434,18 +438,13 @@ TřiVis, or more specifically, its computation of visibility regions, has been e
 - **CGAL-RSA-CI:** [CGAL's rotational sweep algorithm](https://doc.cgal.org/latest/Visibility_2/classCGAL_1_1Rotational__sweep__visibility__2.html) (CGAL version 5.6) with [inexact constructions](https://doc.cgal.org/latest/Kernel_23/classCGAL_1_1Exact__predicates__inexact__constructions__kernel.html).
 - [**VisiLibity1**](https://karlobermeyer.github.io/VisiLibity1/).
 
-**The dataset was derived from the [Iron Harvest](https://bitbucket.org/shortestpathlab/benchmarks/src/master/poly-maps/iron-harvest/) dataset ([Harabor et al., 2022](https://doi.org/10.1609/socs.v15i1.21770)).**
-We have only preprocessed the dataset to TřiVis's input format by selecting the largest polygon per map, including its holes, and discarding the remaining polygons (mainly artifacts).
-If you are going to use the dataset, please give proper attribution to the authors of the original dataset.
-
-
 The evaluation is detailed in a manuscript currently (as of March 2024) submitted to the 2024 IEEE/RSJ International Conference on Intelligent Robots and Systems (IROS).
 
-Here, we provide a guide on how to replicate the performance tests from the manuscript.
+Below is a guide on how to replicate the performance evaluation from the manuscript.
 
-### Replication Guide
+### Replication Guide (Performance Evaluation)
 
-**Build the project:**
+#### Building the Project
 
 The performance evaluation project is located in the [performance/](performance) directory.
 It is dependent on the TřiVis+ extension, and includes two additional dependencies:
@@ -472,11 +471,15 @@ bash build.bash
 ```
 This will create the `build-Release` directory with the executables located in the `build-Release/performance` directory.
 
-**Get the dataset:**
+#### Getting the Dataset
+
+> **Note:** The dataset was derived from the [Iron Harvest](https://bitbucket.org/shortestpathlab/benchmarks/src/master/poly-maps/iron-harvest/) dataset ([Harabor et al., 2022](https://doi.org/10.1609/socs.v15i1.21770)).
+We have only preprocessed the dataset to TřiVis's input format by selecting the largest polygon per map, including its holes, and discarding the remaining polygons (mainly artifacts).
+If you are going to use the dataset, please give proper attribution to the authors of the original dataset.
 
 Download the dataset from [here](https://imr.ciirc.cvut.cz/uploads/Downloads/trivis_performance_dataset.zip) and extract it to the [data/maps/](data/maps) directory.
 
-**Generate the test points:**
+#### Generating the Test Points
 
 The following will generate the test points in the [data/points/](data/points) directory and save the CDT mesh for each map in the [data/meshes/](data/meshes) directory:
 
@@ -485,7 +488,7 @@ cd performance
 bash gen_points_all.bash
 ```
 
-**Construct the visibility regions:**
+#### Constructing the Visibility Regions
 
 The following will construct the visibility regions by all the implementations and save the raw outputs in the [performance/outputs/](performance/outputs) directory:
 
@@ -493,7 +496,7 @@ The following will construct the visibility regions by all the implementations a
 bash test_all.bash # this may take several hours
 ```
 
-**Compare the results with the reference implementation (CGAL-TEA-CE):**
+#### Comparing the Results With the Reference Implementation (CGAL-TEA-CE)
 
 The following will compare the results with the reference implementation and save the evaluation results in the [performance/results/csv/](performance/results/csv) directory:
 
@@ -502,7 +505,7 @@ bash eval_all.bash # this may take several minutes
 rm outputs/* # you can now remove the raw outputs
 ```
 
-**Process the results:**
+#### Processing the Results
 
 The results are processed with [datatable](https://datatable.readthedocs.io/en/latest/).
 To use it, you may need to create a Conda environment with the [conda/datatable.yml](conda/datatable.yml) file:
@@ -520,6 +523,83 @@ python process1.py
 ```
 
 This will generate the `results.csv` file in the [performance/results/](performance/results) directory, which you can inspect and compare with the authors' results located in the [performance/results/authors_results.csv](performance/results/authors_results.csv) file.
+
+## Mesh Optimization
+
+In our original research ([Mikula and Kulich, 2024](https://link.springer.com/article/10.1007/s42979-023-02561-y)), we have addressed the problem of improving the query performance of the *triangular expansion algorithm* for computing visibility regions by finding the most advantageous instance of the triangular mesh.
+
+TřiVis (in its earlier stages of development) was used as the basecode for the research, and the mesh optimization project in the [mesh_optim/](mesh_optim) implemented the mesh optimization algorithms and experiments.
+
+Below is a guide on how to replicate the experiments from the research.
+
+### Replication Guide (Mesh Optimization)
+
+> **Note:** The results presented in [Mikula and Kulich (2024)](https://link.springer.com/article/10.1007/s42979-023-02561-y) were obtained using earlier version of TřiVis ([0.3.0](http://imr.ciirc.cvut.cz/uploads/Research/trivis-sn-comp-sci.zip)).
+The current version of [mesh_optim/](mesh_optim) project has been later updated to work with the current versions of TřiVis and TřiVis+.
+However, due to the extensive experiments, the authors have not yet had the time to test the updated version of the project on the full dataset.
+
+
+#### Building the Project
+
+The mesh optimization project is located in the [mesh_optim/](mesh_optim) directory.
+It is dependent on the TřiVis+ extension.
+
+To build the project, you may first need to create the respective Conda environment:
+```bash
+conda env create -f conda/trivis_boost_cairo_python.yml
+conda activate trivis
+```
+Alternatively, you may already have all the necessary dependencies installed.
+
+Now, you need to set the environment variables to configure the build:
+```bash
+export TRIVIS_BUILD_TRIVIS_PLUS=1
+export TRIVIS_BUILD_MESH_OPTIM=1
+```
+Alternatively, you may modify the [setup.bash](setup.bash) to fix the configuration and run `source setup.bash`.
+
+Building the project is now as simple as running:
+```bash
+bash build.bash
+```
+This will create the `build-Release` directory with the executables located in the `build-Release/mesh_optim` directory.
+
+#### Getting the Dataset
+
+> **Note:** The dataset was derived from the [Iron Harvest](https://bitbucket.org/shortestpathlab/benchmarks/src/master/poly-maps/iron-harvest/) dataset ([Harabor et al., 2022](https://doi.org/10.1609/socs.v15i1.21770)).
+We have only preprocessed the dataset to TřiVis's input format by selecting the largest polygon per map, including its holes, and discarding the remaining polygons (mainly artifacts).
+Additionally, we have generated simple-polygon versions of the maps, as described in detail in the manuscript ([Mikula and Kulich, 2024](https://link.springer.com/article/10.1007/s42979-023-02561-y)).
+If you are going to use the dataset, please give proper attribution to the authors of the original dataset.
+
+Download the dataset from [here](https://imr.ciirc.cvut.cz/uploads/Downloads/trivis_mesh_optim_dataset.zip) and extract it to the [data/maps/](data/maps) directory.
+
+#### Running the Experiments
+
+To replicate every single experiment from [Mikula and Kulich (2024)](https://link.springer.com/article/10.1007/s42979-023-02561-y), run the following:
+```bash
+cd mesh_optim/experiments
+bash run_experiments_all.bash # this may take a few days
+cd ../..
+```
+Alternatively, you can inspect the scripts in the [mesh_optim/experiments/](mesh_optim/experiments) directory and run them individually.
+
+#### Processing the Results
+
+The results are processed with [datatable](https://datatable.readthedocs.io/en/latest/). To use it, you may need to create a Conda environment with the [conda/datatable.yml](conda/datatable.yml) file:
+```bash
+conda create env -f conda/datatable.yml
+conda activate datatable
+```
+
+To process all the results, run the following:
+```bash
+cd mesh_optim/results
+bash process_all.bash # this may take several minutes
+cd ../..
+```
+Alternatively, you can inspect the scripts in the [mesh_optim/results/](mesh_optim/results) directory and run them individually.
+
+The results are saved in the [csv/](mesh_optim/results/csv), [figures/](mesh_optim/results/figures), and [tables/](mesh_optim/results/tables) subdirectories of the [mesh_optim/results/](mesh_optim/results) directory.
 
 ## Documentation
 

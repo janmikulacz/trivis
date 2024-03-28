@@ -1,0 +1,14 @@
+name: trivis
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - compilers==1.7.0
+  - cmake==3.28.1
+  - boost==1.82.0
+  - libboost==1.82.0
+  - libboost-devel==1.82.0
+  - boost-cpp==1.82.0
+  - cairo==1.18.0
+  - python==3.12.1
+  - termcolor==2.4.0

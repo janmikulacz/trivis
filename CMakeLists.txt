@@ -7,6 +7,7 @@ set(TRIVIS_BUILD_TRIVIS_INEXACT false)
 set(TRIVIS_BUILD_TRIVIS_PLUS false)
 set(TRIVIS_BUILD_EXAMPLES false)
 set(TRIVIS_BUILD_PERFORMANCE false)
+set(TRIVIS_BUILD_MESH_OPTIM false)
 
 # Override the default build options with the environment variables.
 if (DEFINED ENV{TRIVIS_BUILD_TRIVIS_INEXACT})
@@ -21,9 +22,12 @@ endif ()
 if (DEFINED ENV{TRIVIS_BUILD_PERFORMANCE})
     set(TRIVIS_BUILD_PERFORMANCE $ENV{TRIVIS_BUILD_PERFORMANCE})
 endif ()
+if (DEFINED ENV{TRIVIS_BUILD_MESH_OPTIM})
+    set(TRIVIS_BUILD_MESH_OPTIM $ENV{TRIVIS_BUILD_MESH_OPTIM})
+endif ()
 
 # Make corrections to the build options based on the mutual dependencies.
-if (TRIVIS_BUILD_EXAMPLES OR TRIVIS_BUILD_PERFORMANCE)
+if (TRIVIS_BUILD_EXAMPLES OR TRIVIS_BUILD_PERFORMANCE OR TRIVIS_BUILD_MESH_OPTIM)
     set(TRIVIS_BUILD_TRIVIS_PLUS true)
 endif ()
 
@@ -45,6 +49,12 @@ if (TRIVIS_BUILD_TRIVIS_PLUS)
 
         # Build the performance tests if requested.
         add_subdirectory(performance)
+
+    endif ()
+    if (TRIVIS_BUILD_MESH_OPTIM)
+
+        # Build the mesh optimization code if requested.
+        add_subdirectory(mesh_optim)
 
     endif ()
 endif ()
