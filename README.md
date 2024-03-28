@@ -30,9 +30,9 @@ ray-shooting queries, and other visibility-related structures.
 - [TřiVis+](#třivis-1)
 - [Examples](#examples)
 - [Performance Evaluation](#performance-evaluation)
-  - [Replication Guide (Performance Evaluation)](#replication-guide-performance-evaluation)
+  - [Replication Guide](#replication-guide-performance-evaluation)
 - [Mesh Optimization](#mesh-optimization)
-  - [Replication Guide (Mesh Optimization)](#replication-guide-mesh-optimization)
+  - [Replication Guide](#replication-guide-mesh-optimization)
 - [Documentation](#documentation)
 - [License](#license)
 
@@ -258,9 +258,9 @@ std::vector<std::vector<int>> point_vertex_graph = vis.PointVertexVisibilityGrap
 TřiVis is self-contained, meaning it does not depend on external libraries.
 However, it includes some third-party libraries that are freely available for private, research, and institutional use, and they are bundled with TřiVis's source code:
 
-- [Triangle](https://www.cs.cmu.edu/~quake/triangle.html), for triangular mesh generation ([Shewchuk, 1996](https://doi.org/10.1007/BFb0014497)).
-- [Robust Geometric Predicates](https://github.com/dengwirda/robust-predicate), for geometry primitives ([Shewchuk, 1997](https://doi.org/10.1007/PL00009321)).
-- [Clipper2](http://www.angusj.com/clipper2/Docs/Overview.htm), for polygon clipping operations and related geometric algorithms.
+1. [Triangle](https://www.cs.cmu.edu/~quake/triangle.html), for triangular mesh generation ([Shewchuk, 1996](https://doi.org/10.1007/BFb0014497)).
+2. [Robust Geometric Predicates](https://github.com/dengwirda/robust-predicate), for geometry primitives ([Shewchuk, 1997](https://doi.org/10.1007/PL00009321)).
+3. [Clipper2](http://www.angusj.com/clipper2/Docs/Overview.htm), for polygon clipping operations and related geometric algorithms.
 
 These third-party libraries are located in the [trivis/lib](trivis/lib) directory.
 While the source code of these libraries is included in TřiVis, their licenses are preserved and can be found in the respective subdirectories of the [trivis/lib](trivis/lib)
@@ -290,7 +290,7 @@ This repository includes TřiVis, as well as some extensions, example projects a
 
 ## TřiVis Codebase
 
-Assuming [trivis/](trivis) is the root directory of the TřiVis codebase, the codebase directory structure is as follows:
+Assuming we are in the [trivis/](trivis) directory, the root directory of the TřiVis codebase, the lower-level directory structure is as follows:
 
 - [include/trivis/](trivis/include/trivis): Header files of the TřiVis library.
     - [geom/](trivis/include/trivis/geom): Geometric types and utilities (includes a wrapper around [Robust Geometric Predicates](https://github.com/dengwirda/robust-predicate)).
@@ -313,8 +313,8 @@ TřiVis+ is an extension of TřiVis that adds support for data loading and visua
 
 It includes two additional, heavier dependencies, which is why it is separated from the TřiVis (core) library:
 
-- [Boost](https://www.boost.org/), for filesystem operations, program options and logging.
-- [Cairo](https://www.cairographics.org/), for 2D graphics rendering.
+1. [Boost](https://www.boost.org/), for filesystem operations, program options and logging.
+2. [Cairo](https://www.cairographics.org/), for 2D graphics rendering.
 
 To make TřiVis+ available to your C++ project, you can copy the [trivis/](trivis) and [trivis_plus/](trivis_plus) directories and include them in your CMakeLists.txt.
 
@@ -340,7 +340,7 @@ cmake .
 make
 ```
 
-Assuming [trivis_plus/](trivis_plus) is the root directory of the TřiVis+ codebase, the codebase directory structure is as follows:
+Assuming we are in the [trivis_plus/](trivis_plus) directory, the root directory of the TřiVis+ codebase, the lower-level directory structure is as follows:
 
 - [include/trivis_plus/](trivis_plus/include/trivis_plus): Header files of the TřiVis+ extension.
     - [data_loading/](trivis_plus/include/trivis_plus/data_loading): Data loading utilities.
@@ -432,11 +432,11 @@ It is built together with the examples by default, and you can run it as follows
 TřiVis, or more specifically, its computation of visibility regions, has been extensively evaluated against several competing implementations on a dataset of 34 complex polygonal environments.
 
 **The competing implementations were:**
-- **CGAL-TEA-CE:** [CGAL's triangular expansion algorithm](https://doc.cgal.org/latest/Visibility_2/classCGAL_1_1Triangular__expansion__visibility__2.html) (CGAL version 5.6) with [exact constructions](https://doc.cgal.org/latest/Kernel_23/classCGAL_1_1Exact__predicates__exact__constructions__kernel.html).
-- **CGAL-TEA-CI:** [CGAL's triangular expansion algorithm](https://doc.cgal.org/latest/Visibility_2/classCGAL_1_1Triangular__expansion__visibility__2.html) (CGAL version 5.6) with [inexact constructions](https://doc.cgal.org/latest/Kernel_23/classCGAL_1_1Exact__predicates__inexact__constructions__kernel.html).
-- **CGAL-RSA-CE:** [CGAL's rotational sweep algorithm](https://doc.cgal.org/latest/Visibility_2/classCGAL_1_1Rotational__sweep__visibility__2.html) (CGAL version 5.6) with [exact constructions](https://doc.cgal.org/latest/Kernel_23/classCGAL_1_1Exact__predicates__exact__constructions__kernel.html).
-- **CGAL-RSA-CI:** [CGAL's rotational sweep algorithm](https://doc.cgal.org/latest/Visibility_2/classCGAL_1_1Rotational__sweep__visibility__2.html) (CGAL version 5.6) with [inexact constructions](https://doc.cgal.org/latest/Kernel_23/classCGAL_1_1Exact__predicates__inexact__constructions__kernel.html).
-- [**VisiLibity1**](https://karlobermeyer.github.io/VisiLibity1/).
+1. **CGAL-TEA-CE:** [CGAL's triangular expansion algorithm](https://doc.cgal.org/latest/Visibility_2/classCGAL_1_1Triangular__expansion__visibility__2.html) (v5.6) with [exact constructions](https://doc.cgal.org/latest/Kernel_23/classCGAL_1_1Exact__predicates__exact__constructions__kernel.html).
+2. **CGAL-TEA-CI:** [CGAL's triangular expansion algorithm](https://doc.cgal.org/latest/Visibility_2/classCGAL_1_1Triangular__expansion__visibility__2.html) (v5.6)  with [inexact constructions](https://doc.cgal.org/latest/Kernel_23/classCGAL_1_1Exact__predicates__inexact__constructions__kernel.html).
+3. **CGAL-RSA-CE:** [CGAL's rotational sweep algorithm](https://doc.cgal.org/latest/Visibility_2/classCGAL_1_1Rotational__sweep__visibility__2.html) (v5.6)  with [exact constructions](https://doc.cgal.org/latest/Kernel_23/classCGAL_1_1Exact__predicates__exact__constructions__kernel.html).
+4. **CGAL-RSA-CI:** [CGAL's rotational sweep algorithm](https://doc.cgal.org/latest/Visibility_2/classCGAL_1_1Rotational__sweep__visibility__2.html) (v5.6) with [inexact constructions](https://doc.cgal.org/latest/Kernel_23/classCGAL_1_1Exact__predicates__inexact__constructions__kernel.html).
+5. **VisiLibity1:** [**VisiLibity**](https://karlobermeyer.github.io/VisiLibity1/) (v1).
 
 The evaluation is detailed in a manuscript currently (as of March 2024) submitted to the 2024 IEEE/RSJ International Conference on Intelligent Robots and Systems (IROS).
 
@@ -448,8 +448,8 @@ Below is a guide on how to replicate the performance evaluation from the manuscr
 
 The performance evaluation project is located in the [performance/](performance) directory.
 It is dependent on the TřiVis+ extension, and includes two additional dependencies:
-- [CGAL](https://www.cgal.org/) (version 5.6), which can be installed system-wide or in a [Conda](https://docs.conda.io/en/latest/) environment.
-- [VisiLibity1](https://karlobermeyer.github.io/VisiLibity1/), which is included in the [performance/lib/](performance/lib) directory.
+1. [CGAL](https://www.cgal.org/) (version 5.6), which can be installed system-wide or in a [Conda](https://docs.conda.io/en/latest/) environment.
+2. [VisiLibity1](https://karlobermeyer.github.io/VisiLibity1/), which is included in the [performance/lib/](performance/lib) directory.
 
 To build the project, you may first need to create the respective Conda environment:
 ```bash
@@ -603,9 +603,8 @@ The results are saved in the [csv/](mesh_optim/results/csv), [figures/](mesh_opt
 
 ## Documentation
 
-Currently, TřiVis is not documented in detail beyond this README file.
-The reason is simple: the authors did not have the time to write the documentation yet.
-However, the authors hope that thanks to simplicity of the API, the [Basic Usage](#basic-usage) section, and the examples in the [examples/](examples) directory (further documented in the [Examples](#examples) section), you should be able to start using TřiVis without major issues.
+Currently, TřiVis lacks detailed documentation beyond this README file due to time constraints faced by the authors.
+However, the simplicity of the API, coupled with the guidance provided in the [Basic Usage](#basic-usage) section and the examples available in the [examples/](examples) directory (further explained in the [Examples](#examples) section), should facilitate seamless adoption of TřiVis for users.
 
 ## License
 
