@@ -10,6 +10,26 @@ It is based on the *triangular expansion algorithm* ([Bungiu et al., 2014](https
 which uses preprocessing to convert the input polygonal environment into a triangular mesh, and then traverses the mesh to compute visibility regions, visibility graphs,
 ray-shooting queries, and other visibility-related structures.
 
+## Table of Contents
+
+- [Definitions](#definitions)
+- [Main Features](#main-features)
+    - [Supported Queries](#supported-queries)
+    - [Worst-Case Query Complexity](#worst-case-query-complexity)
+    - [Efficient Limited-Range Queries](#efficient-limited-range-queries)
+    - [Fast Point Location](#fast-point-location)
+    - [Robustness and Reliability](#robustness-and-reliability)
+    - [Performance on Large Instances](#performance-on-large-instances)
+- [Building and Linking the Library](#building-and-linking-the-library)
+- [Basic Usage](#basic-usage)
+    - [Initialization](#initialization)
+    - [Computing Visibility Queries](#computing-visibility-queries)
+- [Dependencies](#dependencies)
+- [Repository Contents](#repository-contents)
+- [TřiVis Codebase](#trivis-codebase)
+- [TřiVis+](#třivis)
+- [Examples](#examples)
+
 ## Definitions
 
 - **Polygonal Environment:** A 2D environment consisting of a single outer boundary and zero or more inner boundaries (holes), where each boundary is a simple polygon.
@@ -34,7 +54,7 @@ ray-shooting queries, and other visibility-related structures.
 
 ### Supported Queries
 
-TřiVis supports all the queries defined above, each with a specialized, easy-to-use API.
+TřiVis supports all the queries defined [above](#definitions), each with a specialized, easy-to-use API.
 
 ### Worst-Case Query Complexity
 
@@ -328,30 +348,75 @@ For usage examples, refer to the [Examples](#examples) sections.
 
 ## Examples
 
+The example project located in the [examples/](examples) directory demonstrates the usage of TřiVis (and secondarily also TřiVis+).
+
+To build the project, you may first need to create the respective Conda environment:
 ```bash
-# Play with the 2-point/ray-shooting example:
+conda env create -f conda/trivis_boost_cairo.yml 
+conda activate trivis
+```
+Alternatively, you may already have all the necessary dependencies installed.
+
+Now, you need to set the environment variables to configure the build:
+```bash
+export TRIVIS_BUILD_TRIVIS_PLUS=0
+export TRIVIS_BUILD_EXAMPLES=0
+```
+Alternatively, you may modify the [setup.bash](setup.bash) to fix the configuration and run `source setup.bash`.
+
+Now, you can build the project:
+```bash
+bash build.bash
+```
+This will create the `build-Release` directory with the executables located in the `build-Release/examples` directory.
+
+Now you can experiment with the examples and once you are done, you can inspect the source codes in the [examples/](examples) directory.
+
+When experimenting with the examples, the default behavior is that the input polygonal environment is loaded from the [data/maps/](data/maps) directory, the text output is printed to the console and the graphical output is saved to the [examples/outputs/](examples/outputs) directory.
+
+Next are some examples of how to run the example executables.
+
+**2-Point/Ray-Shooting Example:**
+```bash
 ./build-Release/examples/vis_2point 
 ./build-Release/examples/vis_2point --vis-radius 10
 ./build-Release/examples/vis_2point --shoot-ray
 ./build-Release/examples/vis_2point --help # to see all options
-# Play with the visibility region example:
+```
+
+**Visibility Region Example:**
+```bash
 ./build-Release/examples/vis_region
 ./build-Release/examples/vis_region --vis-radius 8
 ./build-Release/examples/vis_region --vis-radius 8 --sample-arc-edges 0.1
 ./build-Release/examples/vis_region --vis-radius 8 --sample-arc-edges 0.1 --to-polygon
 ./build-Release/examples/vis_region --help # to see all options
-# Play with the visible vertices example:
+```
+
+**Visible Vertices Example:**
+```bash
 ./build-Release/examples/vis_vertices
 ./build-Release/examples/vis_vertices --reflex-only
 ./build-Release/examples/vis_vertices --vis-radius 6
 ./build-Release/examples/vis_vertices --help # to see all options
-# Play with the visibility graph example:
+```
+
+**Visibility Graph Example:**
+```bash
 ./build-Release/examples/vis_graph
 ./build-Release/examples/vis_graph --reflex-only
 ./build-Release/examples/vis_graph --reflex-only --vis-radius 6
 ./build-Release/examples/vis_graph --point-vertex --reflex-only --vis-radius 6
 ./build-Release/examples/vis_graph --point-point
 ./build-Release/examples/vis_graph --help # to see all options
+```
+
+Once you are done experimenting with the examples, and you have inspected the source codes, you can start writing your own experimental code based on the examples.
+
+For your convenience, we provide the [examples/sandbox.cc](examples/sandbox.cc) file, which you can use as a starting point for your own experiments.
+It is built together with the examples by default, and you can run it as follows:
+```bash
+./build-Release/examples/sandbox --help # to see all options
 ```
 
 ## Performance Evaluation
