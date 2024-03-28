@@ -76,10 +76,10 @@ For more information, refer to the [Performance Evaluation](#performance-evaluat
 ## Building and Linking the Library
 
 TřiVis is built with [CMake](https://cmake.org/).
-To make the library available to your C++ project, you can copy the source code in the [trivis](trivis) directory and include it in your CMake project.
+
+To make the library available to your C++ project, you can copy the [trivis/](trivis) directory and include it in your CMakeLists.txt:
 
 ```CMake
-# In your CMakeLists.txt:
 add_subdirectory(path_to_trivis) # Add the library to your project.
 target_link_libraries(your_target PUBLIC Trivis) # Link the library to your target.
 ```
@@ -93,14 +93,14 @@ To create and test the environment, run the following in the root directory of t
 
 ```bash
 # Assuming you have Conda installed:
-conda env create -f conda/trivis.yml # Create the environment.
-conda activate trivis # Activate the environment.
-gcc --version # Check the compiler version (12.3.0).
-cmake --version # Check the CMake version (3.28.1).
-mkdir build # Create the build directory.
-cd build # Go to the build directory.
-cmake ../trivis # Configure the build (ignore the warnings).
-make # Build the library.
+conda env create -f conda/trivis.yml
+conda activate trivis
+gcc --version
+cmake --version
+mkdir build
+cd build
+cmake ../trivis
+make
 ```
 
 Apart from TřiVis's source code, this repository also contains TřiVis+, an extension adding support for data loading and visualization, and an example project depending on TřiVis+,
@@ -232,10 +232,8 @@ std::vector<std::vector<int>> point_vertex_graph = vis.PointVertexVisibilityGrap
 TřiVis is self-contained, meaning it does not depend on external libraries.
 However, it includes some third-party libraries that are freely available for private, research, and institutional use, and they are bundled with TřiVis's source code:
 
-- [Triangle](https://www.cs.cmu.edu/~quake/triangle.html), version 1.6, for triangular mesh generation ([Shewchuk, 1996](https://doi.org/10.1007/BFb0014497)).
-- [Robust Geometric Predicates](https://github.com/dengwirda/robust-predicate),
-  commit [cba45db](https://github.com/dengwirda/robust-predicate/commit/cba45db1b0dd66c3ee693be0f05b33675ae4b4b3), for the adaptive robust geometry
-  predicates ([Shewchuk, 1997](https://doi.org/10.1007/PL00009321)).
+- [Triangle](https://www.cs.cmu.edu/~quake/triangle.html), for triangular mesh generation ([Shewchuk, 1996](https://doi.org/10.1007/BFb0014497)).
+- [Robust Geometric Predicates](https://github.com/dengwirda/robust-predicate), for geometry primitives ([Shewchuk, 1997](https://doi.org/10.1007/PL00009321)).
 - [Clipper2](http://www.angusj.com/clipper2/Docs/Overview.htm), for polygon clipping operations and related geometric algorithms.
 
 These third-party libraries are located in the [trivis/lib](trivis/lib) directory.
@@ -265,14 +263,14 @@ This repository includes TřiVis, as well as some extensions, example projects a
 
 ## TřiVis Codebase
 
-Assuming [trivis/](trivis) is the root directory of the TřiVis codebase, the codebase structure is as follows:
+Assuming [trivis/](trivis) is the root directory of the TřiVis codebase, the codebase directory structure is as follows:
 
 - [include/trivis/](trivis/include/trivis): Header files of the TřiVis library.
     - [geom/](trivis/include/trivis/geom): Geometric types and utilities (includes a wrapper around [Robust Geometric Predicates](https://github.com/dengwirda/robust-predicate)).
     - [mesh/](trivis/include/trivis/mesh): Triangular mesh type and utilities (includes a wrapper around [Triangle](https://www.cs.cmu.edu/~quake/triangle.html)).
     - [pl/](trivis/include/trivis/pl): Point location class and utilities.
     - [utils/](trivis/include/trivis/utils): General utilities (includes conversions to and from [Clipper2](http://www.angusj.com/clipper2/Docs/Overview.htm)).
-    - [trivis.h](trivis/include/trivis/trivis.h): The main TřiVis API.
+    - [trivis.h](trivis/include/trivis/trivis.h): The main TřiVis API (`trivis::Trivis` class).
     - [vis_regions.h](trivis/include/trivis/vis_regions.h): Visibility region types and utilities.
 - [lib/](trivis/lib): Contains the third-party libraries bundled with TřiVis.
     - [clipper/](trivis/lib/clipper): [Clipper2](http://www.angusj.com/clipper2/Docs/Overview.htm).
@@ -283,6 +281,50 @@ Assuming [trivis/](trivis) is the root directory of the TřiVis codebase, the co
 - [CMakelists.txt](trivis/CMakeLists.txt): The CMake configuration file for building the TřiVis library.
 
 ## TřiVis+
+
+TřiVis+ is an extension of TřiVis that adds support for data loading and visualization, as well as some extra utilities.
+
+It includes two additional, heavier dependencies, which is why it is separated from the TřiVis (core) library:
+
+- [Boost](https://www.boost.org/), for filesystem operations, program options and logging.
+- [Cairo](https://www.cairographics.org/), for 2D graphics rendering.
+
+To make TřiVis+ available to your C++ project, you can copy the [trivis/](trivis) and [trivis_plus/](trivis_plus) directories and include them in your CMakeLists.txt.
+
+```CMake
+add_subdirectory(path_to_trivis) # Add the library to your project.
+add_subdirectory(path_to_trivis_plus) # Add the extension to your project.
+target_link_libraries(your_target PUBLIC TrivisPlus) # Link just the extension to your target.
+```
+
+For your convenience, the [conda/trivis_boost_cairo.yml](conda/trivis_boost_cairo.yml) file describes [Conda](https://docs.conda.io/en/latest/) environment with the exact compiler,
+CMake version, and the Boost and Cairo libraries used by the authors.
+
+To create and test the environment, run the following in the root directory of this repository:
+
+```bash
+# Assuming you have Conda installed:
+conda env create -f conda/trivis_boost_cairo.yml 
+conda activate trivis
+mkdir build
+cd build
+echo "add_subdirectory(../trivis .)\nadd_subdirectory(../trivis_plus .)" > CMakeLists.txt 
+cmake .
+make
+```
+
+Assuming [trivis_plus/](trivis_plus) is the root directory of the TřiVis+ codebase, the codebase directory structure is as follows:
+
+- [include/trivis_plus/](trivis_plus/include/trivis_plus): Header files of the TřiVis+ extension.
+    - [data_loading/](trivis_plus/include/trivis_plus/data_loading): Data loading utilities.
+    - [drawing/](trivis_plus/include/trivis_plus/drawing): Drawing utilities (includes a wrapper around [Cairo](https://www.cairographics.org/)).
+    - [utils/](trivis_plus/include/trivis_plus/utils): General utilities, including logging.
+    - [trivis_plus.h](trivis_plus/include/trivis_plus/trivis_plus.h): Convenience header including all TřiVis+ headers.
+- [src/trivis_plus/](trivis_plus/src/trivis_plus): Contains the source files of the TřiVis+ extension. Copies the structure
+  of [include/trivis_plus/](trivis_plus/include/trivis_plus).
+- [CMakelists.txt](trivis_plus/CMakeLists.txt): The CMake configuration file for building the TřiVis+ extension.
+
+For usage examples, refer to the [Examples](#examples) sections.
 
 ## Examples
 
