@@ -304,7 +304,7 @@ void trivis::SampleArcEdges(
         int angle_n = static_cast<int>(std::ceil(a_diff / max_sample_angle));
         double angle_delta = a_diff / static_cast<double>(angle_n);
         double alpha = 0;
-        for (int j = 0; j < angle_n - 1; ++j) {
+        for (int j = 0; j < angle_n; ++j) {
             alpha += angle_delta;
             FPoint p = MakePoint(region.seed.x + radius * std::cos(alpha), region.seed.y + radius * std::sin(alpha));
             new_vertices.push_back({-1, -3, p});
