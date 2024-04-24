@@ -131,7 +131,7 @@ void mesh::TriangulateMapCDT(
     triangulate(c_options, &in, &out, &vorout);
 
     // Fill triangles.
-    triangles.reserve(out.numberoftriangles);
+    triangles.reserve(triangles.size() + out.numberoftriangles);
     for (int i = 0, j = 0; i < out.numberoftriangles * 3; i += 3, j++) {
         geom::Polygon<double> triangle;
         triangle.emplace_back(out.pointlist[out.trianglelist[i] * 2], out.pointlist[out.trianglelist[i] * 2 + 1]);
@@ -333,7 +333,7 @@ void mesh::TriangulateMapCDT(
     triangulate(c_options, &in, &out, &vorout);
 
     // Fill triangles.
-    triangles.reserve(out.numberoftriangles);
+    triangles.reserve(triangles.size() + out.numberoftriangles);
     for (int i = 0, j = 0; i < out.numberoftriangles * 3; i += 3, j++) {
         geom::Polygon<double> triangle;
         triangle.emplace_back(out.pointlist[out.trianglelist[i] * 2], out.pointlist[out.trianglelist[i] * 2 + 1]);
@@ -463,7 +463,7 @@ void mesh::TriangulateMapCCDT(
     triangulate(c_options, &in, &out, &vorout);
 
     // Fill triangles.
-    triangles.reserve(out.numberoftriangles);
+    triangles.reserve(triangles.size() + out.numberoftriangles);
     for (int i = 0, j = 0; i < out.numberoftriangles * 3; i += 3, j++) {
         geom::Polygon<double> triangle;
         triangle.emplace_back(out.pointlist[out.trianglelist[i] * 2], out.pointlist[out.trianglelist[i] * 2 + 1]);
