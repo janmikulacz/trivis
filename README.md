@@ -212,7 +212,7 @@ if (plr.has_value()) {
     trivis::AbstractVisibilityRegion avr = vis.VisibilityRegion(query, plr.value(), range);
     trivis::RadialVisibilityRegion rvr = vis.ToRadialVisibilityRegion(avr);
     if (range.has_value()) {
-        rvr.IntersectWithCircleCenteredAtSeed();
+        rvr.IntersectWithCircleCenteredAtSeed(range);
     }
     // Optional post-processing:
     if (range.has_value()) {
