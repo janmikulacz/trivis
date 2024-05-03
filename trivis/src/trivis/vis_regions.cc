@@ -215,7 +215,7 @@ void trivis::IntersectWithCircleCenteredAtSeed(
                     if (intersections.empty()) {
                         intersections = LineCircleIntersections(vi_prev.point.CopySwappedXY(), vi.point.CopySwappedXY(), region.seed.CopySwappedXY(), radius_final, true);
                         if (intersections.empty()) {
-                            std::cerr << std::fixed << "[TriVis][IntersectWithCircle] LineCircle intersections should not be empty (1)! ";
+                            std::cerr << std::fixed << "[Trivis][IntersectWithCircleCenteredAtSeed] LineCircle intersections should not be empty (1)! ";
                             std::cerr << "Line: " << vi_prev.point << ", " << vi.point << ", Circle:" << region.seed << ", " << radius_final << ".\n";
                             continue;
                         }
@@ -237,7 +237,7 @@ void trivis::IntersectWithCircleCenteredAtSeed(
                 if (intersections.empty()) {
                     intersections = LineCircleIntersections(vi_prev.point.CopySwappedXY(), vi.point.CopySwappedXY(), region.seed.CopySwappedXY(), radius_final, true);
                     if (intersections.empty()) {
-                        std::cerr << std::fixed << "[TriVis][IntersectWithCircle] LineCircle intersections should not be empty (2)! ";
+                        std::cerr << std::fixed << "[Trivis][IntersectWithCircleCenteredAtSeed] LineCircle intersections should not be empty (2)! ";
                         std::cerr << "Line: " << vi_prev.point << ", " << vi.point << ", Circle:" << region.seed << ", " << radius_final << ".\n";
                         continue;
                     }
@@ -250,6 +250,17 @@ void trivis::IntersectWithCircleCenteredAtSeed(
         } else {
             // Both endpoints are outside (2 intersections).
             auto intersections = LineCircleIntersections(vi_prev.point, vi.point, region.seed, radius_final, true);
+            if (intersections.size() == 1) {
+                intersections = LineCircleIntersections(vi_prev.point.CopySwappedXY(), vi.point.CopySwappedXY(), region.seed.CopySwappedXY(), radius_final, true);
+                if (intersections.size() == 1) {
+                    std::cerr << std::fixed << "[Trivis][IntersectWithCircleCenteredAtSeed] There should be 0 or 2 intersections! ";
+                    std::cerr << "Line: " << vi_prev.point << ", " << vi.point << ", Circle:" << region.seed << ", " << radius_final << ".\n";
+                    // continue; fixme: not sure if continue or not
+                }
+                for (auto &p: intersections) {
+                    p.SwapXY();
+                }
+            }
             if (!intersections.empty()) {
                 if (intersections.size() > 1 && vi_prev.point.SquaredDistanceTo(intersections[0]) > vi_prev.point.SquaredDistanceTo(intersections[1])) {
                     std::swap(intersections[0], intersections[1]);

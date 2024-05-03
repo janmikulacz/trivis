@@ -2013,7 +2013,7 @@ void Trivis::ExpandEdgeVisibilityRegion(
     // current edge (struct)
     const auto &curr_edge = _mesh.edges[curr_edge_id];
 
-    bool too_far_away = sq_radius >= 0.0 && PointSegmentSquaredDistance(q, _mesh.point(curr_edge.vertices[0]), _mesh.point(curr_edge.vertices[1])) >= sq_radius;
+    bool too_far_away = sq_radius >= 0.0 && PointSegmentSquaredDistance(q, _mesh.point(curr_edge.vertices[0]), _mesh.point(curr_edge.vertices[1])) > sq_radius;
 
     if (too_far_away || curr_edge.is_boundary()) {
         // Report the edge and return.
@@ -2148,7 +2148,7 @@ void Trivis::ExpandEdgeVisibilityRegionIterative(
     // current edge (struct)
     const auto &curr_edge = _mesh.edges[expansion.curr_edge_id];
 
-    bool too_far_away = sq_radius >= 0.0 && PointSegmentSquaredDistance(q, _mesh.point(curr_edge.vertices[0]), _mesh.point(curr_edge.vertices[1])) >= sq_radius;
+    bool too_far_away = sq_radius >= 0.0 && PointSegmentSquaredDistance(q, _mesh.point(curr_edge.vertices[0]), _mesh.point(curr_edge.vertices[1])) > sq_radius;
 
     if (too_far_away || curr_edge.is_boundary()) {
         // Report the edge and return.
@@ -2306,7 +2306,7 @@ void Trivis::ExpandEdgeVisibilityRegionWithHistory(
     history_step.rest_l_id = rest_l_id;
     history_step.rest_r_id = rest_r_id;
 
-    bool too_far_away = sq_radius >= 0.0 && PointSegmentSquaredDistance(q, _mesh.point(curr_edge.vertices[0]), _mesh.point(curr_edge.vertices[1])) >= sq_radius;
+    bool too_far_away = sq_radius >= 0.0 && PointSegmentSquaredDistance(q, _mesh.point(curr_edge.vertices[0]), _mesh.point(curr_edge.vertices[1])) > sq_radius;
 
     if (too_far_away || curr_edge.is_boundary()) {
         // Report the edge and return.
