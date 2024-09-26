@@ -157,48 +157,53 @@ trivis::Trivis vis;
 ```
 
 The triangular mesh of the environment has just been constructed.
-To inspect it, you can access the mesh directly:
+To inspect it, you can access the mesh directly through const reference:
 
 ```C++
 const trivis::mesh::TriMesh &mesh = vis.mesh();
+// TODO: Do something with the mesh.
 ```
 
 ### Computing Visibility Queries
 
-To perform visibility-related queries, you need to provide the query point, the point location result, and the visibility range (if limited).
+To perform most of the visibility-related queries, you need to provide the query point, the point location result, and the visibility range (if limited).
 
 ```C++
 trivis::geom::FPoint query;
 // TODO: Fill the query.
+std::optional<double> range;
+// TODO: Set the visibility range or leave it unlimited.
 std::optional<trivis::Trivis::PointLocationResult> plr = vis.LocatePoint(query);
 if (plr.has_value()) {
     // The query point is inside the environment.
+    // TODO: Perform visibility queries.
 } else {
     // The query point is outside the environment.
+    // TODO: Handle the case.
 }
-std::optional<double> range;
-// TODO: Set the visibility range or leave it unlimited.
 ```
 
 #### Two-Point Visibility Query
 
 ```C++
-trivis::geom::FPoint target;
-// TODO: Fill the target.
 if (plr.has_value()) {
+    trivis::geom::FPoint target;
+    // TODO: Fill the target.
     bool is_visible = vis.IsVisible(query, plr.value(), target, range);
+    // TODO: Do something with the visibility result.
 }
 ```
 
 #### Ray-Shooting Query
 
 ```C++
-trivis::geom::FPoint direction;
-// TODO: Fill the direction.
 if (plr.has_value()) {
+    trivis::geom::FPoint direction;
+    // TODO: Fill the direction.
     std::optional<trivis::Trivis::RayShootingResult> rsr = vis.ShootRay(query, plr.value(), direction, range);
     if (rsr.has_value()) {
         trivis::geom::FPoint intersection = rsr->p;
+        // TODO: Do something with the intersection point.
     } else {
         // The intersection point is outside the visibility range.
     }
@@ -209,16 +214,18 @@ if (plr.has_value()) {
 
 ```C++
 if (plr.has_value()) {
-    trivis::AbstractVisibilityRegion avr = vis.VisibilityRegion(query, plr.value(), range);
-    trivis::RadialVisibilityRegion rvr = vis.ToRadialVisibilityRegion(avr);
+    trivis::AbstractVisibilityRegion abs_vis_region = vis.VisibilityRegion(query, plr.value(), range);
+    trivis::RadialVisibilityRegion vis_region = vis.ToRadialVisibilityRegion(abs_vis_region);
     if (range.has_value()) {
-        rvr.IntersectWithCircleCenteredAtSeed(range);
+        vis_region.IntersectWithCircleCenteredAtSeed(range);
     }
     // Optional post-processing:
+    auto vis_region_appx = vis_region; // Copy the visibility region.
     if (range.has_value()) {
-        vis_region.SampleArcEdges(M_PI / 180.0);
+        vis_region_appx.SampleArcEdges(M_PI / 180.0); // Approximate circular arc edges with line segments.
     }
-    trivis::geom::FPolygon polygon_approx = vis_region->ToPolygon();
+    trivis::geom::FPolygon vis_polygon_appx = vis_region_appx.ToPolygon();
+    // TODO: Do something with the visibility polygon.
 }
 ```
 
@@ -227,12 +234,14 @@ if (plr.has_value()) {
 ```C++
 if (plr.has_value()) {
     std::vector<int> visible_vertices = vis.VisibleVertices(query, plr.value(), range);
+    // TODO: Do something with the visible vertices.
 }
 ```
 
 #### Visible Points Query
 
 ```C++
+// Prepare the input structures outside 'if (plr.has_value())' as they might be reused.
 std::vector<trivis::geom::FPoint> input_points;
 // TODO: Fill the input points.
 std::vector<std::optional<trivis::Trivis::PointLocationResult>> input_plrs;
@@ -242,6 +251,7 @@ for (const auto &p : input_points) {
 }
 if (plr.has_value()) {
     std::vector<int> visible_points = vis.VisiblePoints(query, plr.value(), input_points, input_plrs, range);
+    // TODO: Do something with the visible points.
 }
 ```
 
@@ -249,8 +259,11 @@ if (plr.has_value()) {
 
 ```C++
 std::vector<std::vector<int>> vertex_vertex_graph = vis.VertexVertexVisibilityGraph(range);
+// TODO: Do something with the vertex-vertex visibility graph.
 std::vector<std::vector<int>> point_point_graph = vis.PointPointVisibilityGraph(input_points, input_plrs, range);
+// TODO: Do something with the point-point visibility graph.
 std::vector<std::vector<int>> point_vertex_graph = vis.PointVertexVisibilityGraph(input_points, input_plrs, range);
+// TODO: Do something with the point-vertex visibility graph.
 ```
 
 ## Dependencies
