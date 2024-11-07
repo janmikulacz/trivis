@@ -25,6 +25,11 @@ int64_t ToClipper(
     const geom::FLimits &lim
 );
 
+Clipper2Lib::Point64 ToClipper(
+    const geom::FPoint &p,
+    const geom::FLimits &lim
+);
+
 Clipper2Lib::Paths64 ToClipper(
     const geom::FPolygons &polygons,
     const geom::FLimits &lim

@@ -32,6 +32,11 @@ int64_t utils::ToClipper(double x, const FLimits &lim) {
     return static_cast<int64_t>(utils::Number2Clipper(x, normalizer));
 }
 
+Clipper2Lib::Point64 utils::ToClipper(const FPoint &p, const FLimits &lim) {
+    double normalizer = std::max(lim.x_max - lim.x_min, lim.y_max - lim.y_min);
+    return Clipper2Lib::Point64(utils::Geom2Clipper(p, normalizer, {lim.x_min, lim.y_min}));
+}
+
 Clipper2Lib::Paths64 utils::ToClipper(const FPolygons &polygons, const FLimits &lim) {
     Clipper2Lib::Paths64 ret;
     ret.reserve(polygons.size());
