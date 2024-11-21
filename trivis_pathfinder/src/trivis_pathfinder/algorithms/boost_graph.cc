@@ -7,11 +7,12 @@
  *
  */
 
-#include "trivis_pathfinder/boost_graph.h"
+#include "trivis_pathfinder/algorithms/boost_graph.h"
 
 using namespace trivis_pathfinder;
+using namespace trivis_pathfinder::algorithms;
 
-BoostGraph trivis_pathfinder::ConstructReflexGraph(
+BoostGraph algorithms::ConstructReflexGraph(
     const std::vector<std::vector<int>> &vis_graph_reflex_reflex,
     const trivis::geom::FPoints &reflex_vertices_points
 ) {

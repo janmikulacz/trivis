@@ -12,7 +12,7 @@
 
 #include "trivis_pathfinder/trivis_pathfinder.h"
 
-namespace trivis_pathfinder {
+namespace trivis_pathfinder::utils {
 
 void ConvertPathToPoints(
     const std::vector<int> &cities_id_path,

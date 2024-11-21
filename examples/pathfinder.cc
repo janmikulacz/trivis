@@ -258,7 +258,7 @@ int MainBody(const ProgramOptionVariables &pov) {
     clock.Restart();
     trivis_pathfinder::TrivisPathfinder pathfinder;
     auto status = pathfinder.ConstructReflexVisibilityGraph(vis);
-    if (status != trivis_pathfinder::Status::kOk) {
+    if (status != trivis_pathfinder::utils::Status::kOk) {
         LOGF_FTL("Error while constructing reflex visibility graph.");
         return EXIT_FAILURE;
     }
@@ -268,7 +268,7 @@ int MainBody(const ProgramOptionVariables &pov) {
         LOGF_INF("Precomputing reflex shortest paths.");
         clock.Restart();
         status = pathfinder.PrecomputeReflexShortestPaths();
-        if (status != trivis_pathfinder::Status::kOk) {
+        if (status != trivis_pathfinder::utils::Status::kOk) {
             LOGF_FTL("Error while precomputing reflex shortest paths.");
             return EXIT_FAILURE;
         }
@@ -284,9 +284,9 @@ int MainBody(const ProgramOptionVariables &pov) {
             lengths = std::vector<std::vector<double>>(pathfinder.n_reflex(), std::vector<double>(pathfinder.n_reflex(), 0.0));
             for (int i = 0; i < pathfinder.n_reflex(); ++i) {
                 for (int j = i + 1; j < pathfinder.n_reflex(); ++j) {
-                    trivis_pathfinder::StatusWithResult<double> result;
+                    trivis_pathfinder::utils::StatusWithResult<double> result;
                     result = pathfinder.ShortestPathReflex(vis, i, j);
-                    if (result.status != trivis_pathfinder::Status::kOk) {
+                    if (result.status != trivis_pathfinder::utils::Status::kOk) {
                         LOGF_FTL("Error while computing the shortest path from reflex vertex " << i << " to reflex vertex " << j << ".");
                         return EXIT_FAILURE;
                     }
@@ -304,7 +304,7 @@ int MainBody(const ProgramOptionVariables &pov) {
                     sp.source = pathfinder.reflex_points()[i];
                     sp.target = pathfinder.reflex_points()[j];
                     auto result = pathfinder.ShortestPathReflex(vis, i, j, &sp.points_path, &sp.id_path_no_endpoints);
-                    if (result.status != trivis_pathfinder::Status::kOk) {
+                    if (result.status != trivis_pathfinder::utils::Status::kOk) {
                         LOGF_FTL("Error while computing the shortest path from reflex vertex " << i << " to reflex vertex " << j << ".");
                         return EXIT_FAILURE;
                     }
@@ -321,7 +321,7 @@ int MainBody(const ProgramOptionVariables &pov) {
             LOGF_INF("Constructing cities visibility graph.");
             clock.Restart();
             status = pathfinder.ConstructCitiesVisibilityGraph(vis, query_points.value());
-            if (status != trivis_pathfinder::Status::kOk) {
+            if (status != trivis_pathfinder::utils::Status::kOk) {
                 LOGF_FTL("Error while constructing cities visibility graph.");
                 return EXIT_FAILURE;
             }
@@ -334,7 +334,7 @@ int MainBody(const ProgramOptionVariables &pov) {
             std::vector<std::vector<int>> id_paths_no_endpoints;
             std::vector<double> paths_lengths;
             status = pathfinder.PrecomputeCitiesShortestPaths();
-            if (status != trivis_pathfinder::Status::kOk) {
+            if (status != trivis_pathfinder::utils::Status::kOk) {
                 LOGF_FTL("Error while precomputing cities shortest paths.");
                 return EXIT_FAILURE;
             }
@@ -349,13 +349,13 @@ int MainBody(const ProgramOptionVariables &pov) {
                 const auto &point_i = query_points->operator[](i);
                 for (int j = i + 1; j < query_points->size(); ++j) {
                     const auto &point_j = query_points->operator[](j);
-                    trivis_pathfinder::StatusWithResult<double> result;
+                    trivis_pathfinder::utils::StatusWithResult<double> result;
                     if (pov.all_pairs_random_cities) {
                         result = pathfinder.ShortestPathCities(vis, i, j);
                     } else {
                         result = pathfinder.ShortestPathPoints(vis, point_i, point_j);
                     }
-                    if (result.status != trivis_pathfinder::Status::kOk) {
+                    if (result.status != trivis_pathfinder::utils::Status::kOk) {
                         LOGF_FTL("Error while computing the shortest path from random point " << i << " to random point " << j << ".");
                         return EXIT_FAILURE;
                     }
@@ -374,13 +374,13 @@ int MainBody(const ProgramOptionVariables &pov) {
                     sp.id_target = j;
                     sp.source = point_i;
                     sp.target = point_j;
-                    trivis_pathfinder::StatusWithResult<double> result;
+                    trivis_pathfinder::utils::StatusWithResult<double> result;
                     if (pov.all_pairs_random_cities) {
                         result = pathfinder.ShortestPathCities(vis, i, j, &sp.points_path, &sp.id_path_no_endpoints);
                     } else {
                         result = pathfinder.ShortestPathPoints(vis, point_i, point_j, &sp.points_path, &sp.id_path_no_endpoints);
                     }
-                    if (result.status != trivis_pathfinder::Status::kOk) {
+                    if (result.status != trivis_pathfinder::utils::Status::kOk) {
                         LOGF_FTL("Error while computing the shortest path from random point " << i << " to random point " << j << ".");
                         return EXIT_FAILURE;
                     }
@@ -397,9 +397,9 @@ int MainBody(const ProgramOptionVariables &pov) {
         clock.Restart();
         if (pov.lengths_only) {
             lengths = std::vector<std::vector<double>>(2, std::vector<double>(2, 0.0));
-            trivis_pathfinder::StatusWithResult<double> result;
+            trivis_pathfinder::utils::StatusWithResult<double> result;
             result = pathfinder.ShortestPathPoints(vis, source.value(), target.value());
-            if (result.status != trivis_pathfinder::Status::kOk) {
+            if (result.status != trivis_pathfinder::utils::Status::kOk) {
                 LOGF_FTL("Error while computing the shortest path.");
                 return EXIT_FAILURE;
             }
@@ -411,7 +411,7 @@ int MainBody(const ProgramOptionVariables &pov) {
             sp.source = source.value();
             sp.target = target.value();
             auto result = pathfinder.ShortestPathPoints(vis, source.value(), target.value(), &sp.points_path, &sp.id_path_no_endpoints);
-            if (result.status != trivis_pathfinder::Status::kOk) {
+            if (result.status != trivis_pathfinder::utils::Status::kOk) {
                 LOGF_FTL("Error while computing the shortest path.");
                 return EXIT_FAILURE;
             }

@@ -7,11 +7,12 @@
  *
  */
 
-#include "trivis_pathfinder/visibility_planner.h"
+#include "trivis_pathfinder/algorithms/visibility_planner.h"
 
 #include <boost/heap/fibonacci_heap.hpp>
 
 using namespace trivis_pathfinder;
+using namespace trivis_pathfinder::algorithms;
 
 void VisibilityPlanner::Init(
     const std::vector<bool> &is_node_convex,
@@ -47,7 +48,7 @@ double VisibilityPlanner::FindShortestPath(
     return FindShortestPath(id_path, source_reflex_vertex_id, target_reflex_vertex_id);
 }
 
-StatusWithResult<double> VisibilityPlanner::FindShortestPath(
+utils::StatusWithResult<double> VisibilityPlanner::FindShortestPath(
     const trivis::geom::FPoint &source_city,
     const trivis::geom::FPoint &target_city,
     const trivis::Trivis &vis,
@@ -57,13 +58,13 @@ StatusWithResult<double> VisibilityPlanner::FindShortestPath(
     auto source_city_pl = vis.LocatePoint(source_city);
     if (!source_city_pl.has_value()) {
         id_path_no_endpoints.clear();
-        return {.status = Status::kErrorSourceOutside, .result = -1.0};
+        return {.status = utils::Status::kErrorSourceOutside, .result = -1.0};
     }
 
     if (vis.IsVisible(source_city, source_city_pl.value(), target_city)) {
         // The target is directly visible from the source.
         id_path_no_endpoints.clear();
-        return {.status = Status::kOk, .result = source_city.DistanceTo(target_city)};
+        return {.status = utils::Status::kOk, .result = source_city.DistanceTo(target_city)};
     }
 
     // Compute vertices visible from the source
@@ -72,7 +73,7 @@ StatusWithResult<double> VisibilityPlanner::FindShortestPath(
     auto target_city_pl = vis.LocatePoint(target_city);
     if (!target_city_pl.has_value()) {
         id_path_no_endpoints.clear();
-        return {.status = Status::kErrorTargetOutside, .result = -1.0};
+        return {.status = utils::Status::kErrorTargetOutside, .result = -1.0};
     }
 
     auto visible_vertices_target = vis.VisibleVertices(target_city, target_city_pl.value(), std::nullopt, _is_node_convex);
@@ -99,10 +100,10 @@ StatusWithResult<double> VisibilityPlanner::FindShortestPath(
         _graph_costs[_mesh_id_to_reflex_id[vertex_id]].pop_back();
     }
 
-    return {.status = Status::kOk, .result = path_length};
+    return {.status = utils::Status::kOk, .result = path_length};
 }
 
-StatusWithResult<double> VisibilityPlanner::FindShortestPath(
+utils::StatusWithResult<double> VisibilityPlanner::FindShortestPath(
     const trivis::geom::FPoint &source_city,
     const trivis::geom::FPoint &target_city,
     bool target_visible,
@@ -114,7 +115,7 @@ StatusWithResult<double> VisibilityPlanner::FindShortestPath(
     if (target_visible) {
         // Target is directly visible from the source.
         id_path_no_endpoints.clear();
-        return {.status = Status::kOk, .result = source_city.DistanceTo(target_city)};
+        return {.status = utils::Status::kOk, .result = source_city.DistanceTo(target_city)};
     }
 
     // Add the source to the graph.
@@ -139,10 +140,10 @@ StatusWithResult<double> VisibilityPlanner::FindShortestPath(
         _graph_costs[reflex_vertex_id].pop_back();
     }
 
-    return {.status = Status::kOk, .result = path_length};
+    return {.status = utils::Status::kOk, .result = path_length};
 }
 
-Status VisibilityPlanner::FindShortestPaths(
+utils::Status VisibilityPlanner::FindShortestPaths(
     const trivis::geom::FPoint &source_city,
     const trivis::geom::FPoints &target_cities,
     const trivis::Trivis &vis,
@@ -154,7 +155,7 @@ Status VisibilityPlanner::FindShortestPaths(
     if (!source_city_pl.has_value()) {
         id_paths_no_endpoints.clear();
         paths_lengths.clear();
-        return Status::kErrorSourceOutside;
+        return utils::Status::kErrorSourceOutside;
     }
 
     // Compute vertices visible from the source
@@ -181,7 +182,7 @@ Status VisibilityPlanner::FindShortestPaths(
 
         auto target_city_pl = vis.LocatePoint(target_city);
         if (!target_city_pl.has_value()) {
-            return Status::kErrorTargetOutside;
+            return utils::Status::kErrorTargetOutside;
         }
 
         auto visible_vertices_target = vis.VisibleVertices(target_city, target_city_pl.value(), std::nullopt, _is_node_convex);
@@ -204,10 +205,10 @@ Status VisibilityPlanner::FindShortestPaths(
     _graph_neigh[_source_v].clear();
     _graph_costs[_source_v].clear();
 
-    return Status::kOk;
+    return utils::Status::kOk;
 }
 
-Status VisibilityPlanner::FindShortestPaths(
+utils::Status VisibilityPlanner::FindShortestPaths(
     const trivis::geom::FPoint &source_city,
     const trivis::geom::FPoints &target_cities,
     std::vector<bool> &targets_visible,
@@ -254,7 +255,7 @@ Status VisibilityPlanner::FindShortestPaths(
     _graph_neigh[_source_v].clear();
     _graph_costs[_source_v].clear();
 
-    return Status::kOk;
+    return utils::Status::kOk;
 }
 
 double VisibilityPlanner::FindShortestPath(

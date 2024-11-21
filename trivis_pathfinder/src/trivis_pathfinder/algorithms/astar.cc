@@ -7,13 +7,14 @@
  *
  */
 
-#include "trivis_pathfinder/astar.h"
+#include "trivis_pathfinder/algorithms/astar.h"
 
 #include <iostream>
 
 #include "boost/graph/astar_search.hpp"
 
 using namespace trivis_pathfinder;
+using namespace trivis_pathfinder::algorithms;
 
 class TargetVisitor : public boost::default_astar_visitor {
 public:
@@ -28,7 +29,7 @@ private:
     int _target_graph_v;
 };
 
-double trivis_pathfinder::ComputeCityPairShortestPathAstar(
+double algorithms::ComputeCityPairShortestPathAstar(
     const trivis::geom::FPoint &source_city,
     const trivis::geom::FPoint &target_city,
     bool cities_visible,

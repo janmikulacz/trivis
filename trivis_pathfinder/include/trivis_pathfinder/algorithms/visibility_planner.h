@@ -10,10 +10,10 @@
 #ifndef TRIVIS_PATHFINDER_VISIBILITY_PLANNER_H_
 #define TRIVIS_PATHFINDER_VISIBILITY_PLANNER_H_
 
-#include "trivis_pathfinder/status.h"
+#include "trivis_pathfinder/utils/status.h"
 #include "trivis/trivis.h"
 
-namespace trivis_pathfinder {
+namespace trivis_pathfinder::algorithms {
 
 class VisibilityPlanner {
 public:
@@ -31,14 +31,14 @@ public:
         std::vector<int> &id_path
     );
 
-    StatusWithResult<double> FindShortestPath(
+    utils::StatusWithResult<double> FindShortestPath(
         const trivis::geom::FPoint &source_city,
         const trivis::geom::FPoint &target_city,
         const trivis::Trivis &vis,
         std::vector<int> &id_path_no_endpoints
     );
 
-    StatusWithResult<double> FindShortestPath(
+    utils::StatusWithResult<double> FindShortestPath(
         const trivis::geom::FPoint &source_city,
         const trivis::geom::FPoint &target_city,
         bool target_visible,
@@ -47,7 +47,7 @@ public:
         std::vector<int> &id_path_no_endpoints
     );
 
-    Status FindShortestPaths(
+    utils::Status FindShortestPaths(
         const trivis::geom::FPoint &source_city,
         const trivis::geom::FPoints &target_cities,
         const trivis::Trivis &vis,
@@ -55,7 +55,7 @@ public:
         std::vector<double> &paths_lengths
     );
 
-    Status FindShortestPaths(
+    utils::Status FindShortestPaths(
         const trivis::geom::FPoint &source_city,
         const trivis::geom::FPoints &target_cities,
         std::vector<bool> &targets_visible,

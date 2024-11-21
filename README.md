@@ -27,6 +27,7 @@ ray-shooting queries, and other visibility-related structures.
 - [Dependencies](#dependencies)
 - [Repository Contents](#repository-contents)
 - [TřiVis Codebase](#třivis-codebase)
+- [TřiVis Pathfinder](#třivis-pathfinder)
 - [TřiVis+](#třivis-1)
 - [Examples](#examples)
 - [Performance Evaluation](#performance-evaluation)
@@ -293,6 +294,7 @@ This repository includes TřiVis, as well as some extensions, example projects a
 - [mesh_optim/](mesh_optim): [Mesh optimization project.](#mesh-optimization)
 - [performance/](performance): [Performance evaluation project.](#performance-evaluation)
 - [trivis/](trivis): [TřiVis library (core).](#třivis-codebase)
+- [trivis_pathfinder/](trivis_pathfinder): [TřiVis Pathfinder library, an extension adding support for pathfinding in polygonal environments.](#třivis-pathfinder)
 - [trivis_plus/](trivis_plus): [TřiVis+ library, an extension adding support for data loading and visualization.](#třivis-1)
 - [build.bash](build.bash): A convenience script for building the library and example projects.
 - [CMakelists.txt](CMakeLists.txt): The main CMake configuration file for building the library and example projects.
@@ -319,6 +321,53 @@ Assuming we are in the [trivis/](trivis) directory, the root directory of the T�
     - [CMakelists.txt](trivis/lib/CMakeLists.txt): The CMake configuration file for building the third-party libraries.
 - [src/trivis/](trivis/src/trivis): Contains the source files of the TřiVis library. Copies the structure of [include/trivis/](trivis/include/trivis).
 - [CMakelists.txt](trivis/CMakeLists.txt): The CMake configuration file for building the TřiVis library.
+
+## TřiVis Pathfinder
+
+TřiVis Pathfinder is a pathfinding extension of TřiVis that adds support for pathfinding in polygonal environments, i.e., finding the shortest path between two points in a polygonal environment, or between all pairs of points in the environment.
+
+It includes one additional, heavier dependency, which is why it is separated from the TřiVis (core) library:
+
+1. [Boost](https://www.boost.org/), for algorithms and data structures used in pathfinding.
+
+To make TřiVis Pathfinder available to your C++ project, you can copy the [trivis/](trivis) and [trivis_pathfinder/](trivis_pathfinder) directories and include them in your CMakeLists.txt.
+
+```CMake
+add_subdirectory(path_to_trivis) # Add the library to your project.
+add_subdirectory(path_to_trivis_pathfinder) # Add the extension to your project.
+target_link_libraries(your_target PUBLIC TrivisPathfinder) # Link just the extension to your target.
+```
+
+For your convenience, the [conda/trivis_boost.yml](conda/trivis_boost.yml) file describes [Conda](https://docs.conda.io/en/latest/) environment with the exact compiler, CMake version, and the Boost library used by the authors.
+
+To create and test the environment, run the following in the root directory of this repository:
+
+```bash
+# Assuming you have Conda installed:
+conda env create -f conda/trivis_boost.yml
+conda activate trivis
+mkdir build
+cd build
+echo "add_subdirectory(../trivis .)\nadd_subdirectory(../trivis_pathfinder .)" > CMakeLists.txt
+cmake .
+make
+```
+
+Assuming we are in the [trivis_pathfinder/](trivis_pathfinder) directory, the root directory of the TřiVis Pathfinder codebase, the lower-level directory structure is as follows:
+- [include/trivis_pathfinder/](trivis_pathfinder/include/trivis_pathfinder): Header files of the TřiVis Pathfinder extension.
+    - [algorithms/](trivis_pathfinder/include/trivis_pathfinder/algorithms): Pathfinding algorithms.
+    - [utils/](trivis_pathfinder/include/trivis_pathfinder/utils): General utilities.
+    - [trivis_pathfinder.h](trivis_pathfinder/include/trivis_pathfinder/trivis_pathfinder.h): The main TřiVis Pathfinder API.
+- [src/trivis_pathfinder/](trivis_pathfinder/src/trivis_pathfinder): Contains the source files of the TřiVis Pathfinder extension. Copies the structure of [include/trivis_pathfinder/](trivis_pathfinder/include/trivis_pathfinder).
+- [CMakelists.txt](trivis_pathfinder/CMakeLists.txt): The CMake configuration file for building the TřiVis Pathfinder extension.
+
+### Basic Usage
+
+TODO !
+
+### Examples
+
+For usage example, refer to the end of the [Examples](#examples) section.
 
 ## TřiVis+
 
@@ -364,7 +413,7 @@ Assuming we are in the [trivis_plus/](trivis_plus) directory, the root directory
   of [include/trivis_plus/](trivis_plus/include/trivis_plus).
 - [CMakelists.txt](trivis_plus/CMakeLists.txt): The CMake configuration file for building the TřiVis+ extension.
 
-For usage examples, refer to the [Examples](#examples) sections.
+For usage examples, refer to the [Examples](#examples) section.
 
 ## Examples
 
@@ -439,6 +488,11 @@ It is built together with the examples by default, and you can run it as follows
 ```bash
 ./build-Release/examples/sandbox --help # to see all options
 ```
+
+#### Pathfinding Example
+
+TODO !
+
 
 ## Performance Evaluation
 

@@ -10,7 +10,7 @@
 #ifndef TRIVIS_PATHFINDER_STATUS_H_
 #define TRIVIS_PATHFINDER_STATUS_H_
 
-namespace trivis_pathfinder {
+namespace trivis_pathfinder::utils {
 
 enum class Status : int {
     kOk = 0,

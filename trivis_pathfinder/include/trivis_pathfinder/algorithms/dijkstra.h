@@ -10,9 +10,9 @@
 #ifndef TRIVIS_PATHFINDER_DIJKSTRA_H_
 #define TRIVIS_PATHFINDER_DIJKSTRA_H_
 
-#include "trivis_pathfinder/boost_graph.h"
+#include "trivis_pathfinder/algorithms/boost_graph.h"
 
-namespace trivis_pathfinder {
+namespace trivis_pathfinder::algorithms {
 
 /// ###################################
 /// # All-pairs reflex vertex queries #

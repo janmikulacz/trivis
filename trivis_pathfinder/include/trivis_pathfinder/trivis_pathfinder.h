@@ -10,9 +10,9 @@
 #ifndef TRIVIS_PATHFINDER_PATH_FINDER_H_
 #define TRIVIS_PATHFINDER_PATH_FINDER_H_
 
-#include "trivis_pathfinder/status.h"
-#include "trivis_pathfinder/visibility_planner.h"
-#include "trivis_pathfinder/boost_graph.h"
+#include "trivis_pathfinder/utils/status.h"
+#include "trivis_pathfinder/algorithms/visibility_planner.h"
+#include "trivis_pathfinder/algorithms/boost_graph.h"
 
 #include "trivis/trivis.h"
 
@@ -22,18 +22,18 @@ class TrivisPathfinder {
 
 public:
 
-    Status ConstructReflexVisibilityGraph(const trivis::Trivis &vis);
+    utils::Status ConstructReflexVisibilityGraph(const trivis::Trivis &vis);
 
-    Status PrecomputeReflexShortestPaths();
+    utils::Status PrecomputeReflexShortestPaths();
 
-    Status ConstructCitiesVisibilityGraph(
+    utils::Status ConstructCitiesVisibilityGraph(
         const trivis::Trivis &vis,
         trivis::geom::FPoints cities
     );
 
-    Status PrecomputeCitiesShortestPaths();
+    utils::Status PrecomputeCitiesShortestPaths();
 
-    StatusWithResult<double> ShortestPathReflex(
+    utils::StatusWithResult<double> ShortestPathReflex(
         const trivis::Trivis &vis,
         int source_reflex_id,
         int target_reflex_id,
@@ -41,7 +41,7 @@ public:
         std::vector<int> *id_path_no_endpoints = nullptr
     );
 
-    StatusWithResult<double> ShortestPathCities(
+    utils::StatusWithResult<double> ShortestPathCities(
         const trivis::Trivis &vis,
         int source_city_id,
         int target_city_id,
@@ -49,7 +49,7 @@ public:
         std::vector<int> *id_path_no_endpoints = nullptr
     );
 
-    StatusWithResult<double> ShortestPathPoints(
+    utils::StatusWithResult<double> ShortestPathPoints(
         const trivis::Trivis &vis,
         const trivis::geom::FPoint &source_point,
         const trivis::geom::FPoint &target_point,
@@ -167,9 +167,9 @@ private:
     /// === PLANNING CLASSES ===
 
     // Structure used by boost's Dijkstra algorithm.
-    trivis_pathfinder::BoostGraph _reflex_graph;
+    trivis_pathfinder::algorithms::BoostGraph _reflex_graph;
     // The visibility planner.
-    trivis_pathfinder::VisibilityPlanner _vis_planner;
+    trivis_pathfinder::algorithms::VisibilityPlanner _vis_planner;
 
     /// #############################################
     /// ## FILLED BY PrecomputeReflexShortestPaths ##

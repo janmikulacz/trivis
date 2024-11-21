@@ -7,11 +7,12 @@
  *
  */
 
-#include "trivis_pathfinder/utils.h"
+#include "trivis_pathfinder/utils/utils.h"
 
 using namespace trivis_pathfinder;
+using namespace trivis_pathfinder::utils;
 
-void trivis_pathfinder::ConvertPathToPoints(
+void utils::ConvertPathToPoints(
     const std::vector<int> &cities_id_path,
     const trivis::Trivis &vis,
     trivis_pathfinder::TrivisPathfinder &path_finder,

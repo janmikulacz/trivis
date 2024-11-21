@@ -7,7 +7,7 @@
  *
  */
 
-#include "trivis_pathfinder/dijkstra.h"
+#include "trivis_pathfinder/algorithms/dijkstra.h"
 
 #include <iostream>
 
@@ -16,6 +16,7 @@
 #include "trivis/trivis.h"
 
 using namespace trivis_pathfinder;
+using namespace trivis_pathfinder::algorithms;
 
 class EarlyExitVisitor : public boost::default_bfs_visitor {
 public:
@@ -44,7 +45,7 @@ protected:
     int _city_cnt = 0;
 };
 
-void trivis_pathfinder::ComputeShortestPathsDijkstraAllPairsReflex(
+void algorithms::ComputeShortestPathsDijkstraAllPairsReflex(
     const BoostGraph &reflex_graph,
     std::vector<std::vector<double>> &paths_lengths,
     std::vector<std::vector<int>> &paths_predecessor_map
@@ -60,7 +61,7 @@ void trivis_pathfinder::ComputeShortestPathsDijkstraAllPairsReflex(
     }
 }
 
-std::vector<int> trivis_pathfinder::GetShortestIDPathAllPairsReflex(
+std::vector<int> algorithms::GetShortestIDPathAllPairsReflex(
     int source_id,
     int target_id,
     const std::vector<int> &source_predecessors
@@ -82,7 +83,7 @@ std::vector<int> trivis_pathfinder::GetShortestIDPathAllPairsReflex(
     return id_path;
 }
 
-double trivis_pathfinder::ComputeShortestPathDijkstraCities(
+double algorithms::ComputeShortestPathDijkstraCities(
     const trivis::geom::FPoint &source_city,
     const trivis::geom::FPoint &target_city,
     bool cities_visible,
@@ -133,7 +134,7 @@ double trivis_pathfinder::ComputeShortestPathDijkstraCities(
     return min_length;
 }
 
-trivis::geom::FPoints trivis_pathfinder::ConvertIDPathToPointPathCities(
+trivis::geom::FPoints algorithms::ConvertIDPathToPointPathCities(
     const std::vector<int> &id_path_no_endpoints,
     const trivis::geom::FPoints &reflex_vertices_points,
     const trivis::geom::FPoint &source_city,
@@ -144,7 +145,7 @@ trivis::geom::FPoints trivis_pathfinder::ConvertIDPathToPointPathCities(
     return point_path;
 }
 
-void trivis_pathfinder::ComputeShortestPathsDijkstraAllPairsCities(
+void algorithms::ComputeShortestPathsDijkstraAllPairsCities(
     BoostGraph reflex_graph,
     const trivis::geom::FPoints &reflex_vertices_points,
     const trivis::geom::FPoints &cities,
@@ -200,7 +201,7 @@ void trivis_pathfinder::ComputeShortestPathsDijkstraAllPairsCities(
     }
 }
 
-double trivis_pathfinder::GetShortestPathLengthAllPairsCities(
+double algorithms::GetShortestPathLengthAllPairsCities(
     int source_city_id,
     int target_city_id,
     int n_reflex_vertices,
@@ -215,7 +216,7 @@ double trivis_pathfinder::GetShortestPathLengthAllPairsCities(
     return paths_lengths[source_city_id][n_reflex_vertices + target_city_id];
 }
 
-std::vector<int> trivis_pathfinder::GetShortestIDPathAllPairsCities(
+std::vector<int> algorithms::GetShortestIDPathAllPairsCities(
     int source_city_id,
     int target_city_id,
     int n_reflex_vertices,
@@ -246,7 +247,7 @@ std::vector<int> trivis_pathfinder::GetShortestIDPathAllPairsCities(
     return id_path;
 }
 
-trivis::geom::FPoints trivis_pathfinder::ConvertIDPathToPointPathAllPairsCities(
+trivis::geom::FPoints algorithms::ConvertIDPathToPointPathAllPairsCities(
     const std::vector<int> &id_path,
     const trivis::geom::FPoints &reflex_vertices_points,
     const trivis::geom::FPoints &cities

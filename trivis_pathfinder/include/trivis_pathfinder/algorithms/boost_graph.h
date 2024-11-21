@@ -15,7 +15,7 @@
 
 #include "trivis/trivis.h"
 
-namespace trivis_pathfinder {
+namespace trivis_pathfinder::algorithms {
 
 using BoostGraphOutEdgeListType = boost::vecS;
 using BoostGraphVertexListType = boost::vecS;

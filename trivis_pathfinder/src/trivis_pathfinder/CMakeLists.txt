@@ -2,12 +2,12 @@ unset(ENV{BOOST_ROOT}) # if BOOST_ROOT is set to a different version than found 
 find_package(Boost 1.82 REQUIRED)
 
 set(TrivisPathfinder_SRC
-        astar.cc
-        boost_graph.cc
-        dijkstra.cc
+        algorithms/astar.cc
+        algorithms/boost_graph.cc
+        algorithms/dijkstra.cc
+        algorithms/visibility_planner.cc
+        utils/utils.cc
         trivis_pathfinder.cc
-        utils.cc
-        visibility_planner.cc
 )
 
 add_library(TrivisPathfinder ${TrivisPathfinder_SRC})
