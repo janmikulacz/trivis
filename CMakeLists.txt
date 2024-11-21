@@ -8,10 +8,14 @@ set(TRIVIS_BUILD_TRIVIS_PLUS false)
 set(TRIVIS_BUILD_EXAMPLES false)
 set(TRIVIS_BUILD_PERFORMANCE false)
 set(TRIVIS_BUILD_MESH_OPTIM false)
+set(TRIVIS_BUILD_TRIVIS_PATHFINDER false)
 
 # Override the default build options with the environment variables.
 if (DEFINED ENV{TRIVIS_BUILD_TRIVIS_INEXACT})
     set(TRIVIS_BUILD_TRIVIS_INEXACT $ENV{TRIVIS_BUILD_TRIVIS_INEXACT})
+endif ()
+if (DEFINED ENV{TRIVIS_BUILD_TRIVIS_PATHFINDER})
+    set(TRIVIS_BUILD_TRIVIS_PATHFINDER $ENV{TRIVIS_BUILD_TRIVIS_PATHFINDER})
 endif ()
 if (DEFINED ENV{TRIVIS_BUILD_TRIVIS_PLUS})
     set(TRIVIS_BUILD_TRIVIS_PLUS $ENV{TRIVIS_BUILD_TRIVIS_PLUS})
@@ -33,6 +37,13 @@ endif ()
 
 # Build TriVis by default.
 add_subdirectory(trivis)
+
+if (TRIVIS_BUILD_TRIVIS_PATHFINDER)
+
+    # Build the TriVis Pathfinder if requested.
+    add_subdirectory(trivis_pathfinder)
+
+endif ()
 
 if (TRIVIS_BUILD_TRIVIS_PLUS)
 
