@@ -23,7 +23,7 @@ enum class Status : int {
 template<typename T>
 struct StatusWithResult {
     Status status;
-    T result;
+    T result = T(0.0);
 };
 
 }
