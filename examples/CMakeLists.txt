@@ -11,3 +11,13 @@ foreach (example ${examples})
     )
     target_link_libraries(${example} PUBLIC TrivisPlus)
 endforeach ()
+if (TRIVIS_BUILD_TRIVIS_PATHFINDER)
+
+    add_executable(pathfinder pathfinder.cc)
+    target_compile_definitions(pathfinder PRIVATE
+            DEFAULT_MAP_DIR="${PROJECT_SOURCE_DIR}/data/maps"
+            DEFAULT_OUT_DIR="${CMAKE_CURRENT_SOURCE_DIR}/outputs"
+    )
+    target_link_libraries(pathfinder PUBLIC TrivisPlus TrivisPathfinder)
+
+endif ()

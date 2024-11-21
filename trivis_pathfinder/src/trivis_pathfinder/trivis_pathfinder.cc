@@ -15,7 +15,7 @@
 
 using namespace trivis_pathfinder;
 
-bool TrivisPathfinder::ConstructReflexVisibilityGraph(const trivis::Trivis &vis) {
+Status TrivisPathfinder::ConstructReflexVisibilityGraph(const trivis::Trivis &vis) {
 
     _has_vis_graph_reflex = false;
     _has_shortest_paths_reflex = false;
@@ -76,13 +76,13 @@ bool TrivisPathfinder::ConstructReflexVisibilityGraph(const trivis::Trivis &vis)
 
     _has_vis_graph_reflex = true;
 
-    return true;
+    return Status::kOk;
 }
 
-bool TrivisPathfinder::PrecomputeReflexShortestPaths() {
+Status TrivisPathfinder::PrecomputeReflexShortestPaths() {
 
     if (!_has_vis_graph_reflex) {
-        return false;
+        return Status::kErrorNoReflexVisibilityGraph;
     }
 
     // Compute the shortest paths for the reflex graph.
@@ -90,10 +90,10 @@ bool TrivisPathfinder::PrecomputeReflexShortestPaths() {
 
     _has_shortest_paths_reflex = true;
 
-    return true;
+    return Status::kOk;
 }
 
-bool TrivisPathfinder::ConstructCitiesVisibilityGraph(
+Status TrivisPathfinder::ConstructCitiesVisibilityGraph(
     const trivis::Trivis &vis,
     trivis::geom::FPoints cities
 ) {
@@ -102,7 +102,7 @@ bool TrivisPathfinder::ConstructCitiesVisibilityGraph(
     _has_shortest_paths_cities = false;
 
     if (!_has_vis_graph_reflex) {
-        return false;
+        return Status::kErrorNoReflexVisibilityGraph;
     }
 
     // Save cities.
@@ -152,13 +152,13 @@ bool TrivisPathfinder::ConstructCitiesVisibilityGraph(
 
     _has_vis_graph_cities = true;
 
-    return true;
+    return Status::kOk;
 }
 
-bool TrivisPathfinder::PrecomputeCitiesShortestPaths() {
+Status TrivisPathfinder::PrecomputeCitiesShortestPaths() {
 
     if (!_has_vis_graph_cities) {
-        return false;
+        return Status::kErrorNoCitiesVisibilityGraph;
     }
 
     ComputeShortestPathsDijkstraAllPairsCities(
@@ -172,10 +172,10 @@ bool TrivisPathfinder::PrecomputeCitiesShortestPaths() {
 
     _has_shortest_paths_cities = true;
 
-    return true;
+    return Status::kOk;
 }
 
-double TrivisPathfinder::ShortestPathReflex(
+StatusWithResult<double> TrivisPathfinder::ShortestPathReflex(
     const trivis::Trivis &vis,
     int source_reflex_id,
     int target_reflex_id,
@@ -189,7 +189,7 @@ double TrivisPathfinder::ShortestPathReflex(
         if (id_path_no_endpoints) {
             *id_path_no_endpoints = std::vector<int>{};
         }
-        return 0.0;
+        return {.status = Status::kOk, .result = 0.0};
     }
     if (_has_shortest_paths_reflex) {
         double length = _shortest_paths_lengths_reflex[source_reflex_id][target_reflex_id];
@@ -207,7 +207,7 @@ double TrivisPathfinder::ShortestPathReflex(
                 *id_path_no_endpoints = std::vector<int>(id_path_temp.begin() + 1, id_path_temp.end() - 1);
             }
         }
-        return length;
+        return {.status = Status::kOk, .result = length};
     }
     if (_has_vis_graph_reflex) {
         std::vector<int> id_path_temp;
@@ -222,13 +222,12 @@ double TrivisPathfinder::ShortestPathReflex(
                 *id_path_no_endpoints = std::vector<int>(id_path_temp.begin() + 1, id_path_temp.end() - 1);
             }
         }
-        return length;
+        return {.status = Status::kOk, .result = length};
     }
-    //LOGF_ERR("[PathFinder::ShortestPathReflex] Could not get the shortest path!");
-    return -1.0;
+    return {.status = Status::kErrorNoReflexVisibilityGraph, .result = -1.0};
 }
 
-double TrivisPathfinder::ShortestPathCities(
+StatusWithResult<double> TrivisPathfinder::ShortestPathCities(
     const trivis::Trivis &vis,
     int source_city_id,
     int target_city_id,
@@ -244,7 +243,7 @@ double TrivisPathfinder::ShortestPathCities(
         if (id_path_no_endpoints) {
             *id_path_no_endpoints = std::vector<int>{};
         }
-        return 0.0;
+        return {.status = Status::kOk, .result = 0.0};
     }
     if (_has_shortest_paths_cities) {
         double length = trivis_pathfinder::GetShortestPathLengthAllPairsCities(source_city_id, target_city_id, _n_reflex, _shortest_paths_lengths_cities);
@@ -262,7 +261,7 @@ double TrivisPathfinder::ShortestPathCities(
                 *id_path_no_endpoints = std::vector<int>(id_path_temp.begin() + 1, id_path_temp.end() - 1);
             }
         }
-        return length;
+        return {.status = Status::kOk, .result = length};
     }
     if (_has_vis_graph_cities && _has_shortest_paths_reflex) {
         std::vector<int> id_path_no_endpoints_temp;
@@ -282,31 +281,25 @@ double TrivisPathfinder::ShortestPathCities(
         if (id_path_no_endpoints) {
             *id_path_no_endpoints = std::move(id_path_no_endpoints_temp);
         }
-        return length;
+        return {.status = Status::kOk, .result = length};
     }
     if (_has_vis_graph_cities && _has_vis_graph_reflex) {
         std::vector<int> id_path_no_cities_temp;
-        _vis_planner.FindShortestPath(
-            source_city,
-            target_city,
-            _vis_graph_city_city_bool_matrix[source_city_id][target_city_id],
-            _vis_graph_city_reflex[source_city_id],
-            _vis_graph_city_reflex[target_city_id],
-            id_path_no_cities_temp);
-        double length = _vis_planner.FindShortestPath(source_city, target_city, vis, id_path_no_cities_temp);
-        if (point_path) {
-            *point_path = trivis_pathfinder::ConvertIDPathToPointPathCities(id_path_no_cities_temp, _reflex_points, source_city, target_city);
+        auto result = _vis_planner.FindShortestPath(source_city, target_city, vis, id_path_no_cities_temp);
+        if (result.status == Status::kOk) {
+            if (point_path) {
+                *point_path = trivis_pathfinder::ConvertIDPathToPointPathCities(id_path_no_cities_temp, _reflex_points, source_city, target_city);
+            }
+            if (id_path_no_endpoints) {
+                *id_path_no_endpoints = std::move(id_path_no_cities_temp);
+            }
         }
-        if (id_path_no_endpoints) {
-            *id_path_no_endpoints = std::move(id_path_no_cities_temp);
-        }
-        return length;
+        return result;
     }
-    //LOGF_ERR("[PathFinder::ShortestPathCities] Could not get the shortest path!");
-    return -1.0;
+    return {.status = Status::kErrorNoCitiesVisibilityGraph, .result = -1.0};
 }
 
-double TrivisPathfinder::ShortestPathPoints(
+StatusWithResult<double> TrivisPathfinder::ShortestPathPoints(
     const trivis::Trivis &vis,
     const trivis::geom::FPoint &source_point,
     const trivis::geom::FPoint &target_point,
@@ -320,20 +313,18 @@ double TrivisPathfinder::ShortestPathPoints(
         if (id_path_no_endpoints) {
             *id_path_no_endpoints = std::vector<int>{};
         }
-        return 0.0;
+        return {.status = Status::kOk, .result = 0.0};
     }
     if (_has_shortest_paths_reflex) {
 
         auto source_point_pl = vis.LocatePoint(source_point);
         if (!source_point_pl.has_value()) {
-            //LOGF_ERR("[PathFinder::ShortestPathPoints] Source out of map!");
-            return -1.0;
+            return {.status = Status::kErrorSourceOutside, .result = -1.0};
         }
 
         auto target_point_pl = vis.LocatePoint(target_point);
         if (!target_point_pl.has_value()) {
-            //LOGF_ERR("[PathFinder::ShortestPathPoints] Target out of map!");
-            return -1.0;
+            return {.status = Status::kErrorTargetOutside, .result = -1.0};
         }
 
         std::vector<int> visible_vertices_source;
@@ -374,21 +365,22 @@ double TrivisPathfinder::ShortestPathPoints(
             *id_path_no_endpoints = std::move(id_path_no_cities_temp);
         }
 
-        return length;
+        return {.status = Status::kOk, .result = length};
     }
     if (_has_vis_graph_reflex) {
         std::vector<int> id_path_no_cities_temp;
-        double length = _vis_planner.FindShortestPath(source_point, target_point, vis, id_path_no_cities_temp);
-        if (point_path) {
-            *point_path = trivis_pathfinder::ConvertIDPathToPointPathCities(id_path_no_cities_temp, _reflex_points, source_point, target_point);
+        auto result = _vis_planner.FindShortestPath(source_point, target_point, vis, id_path_no_cities_temp);
+        if (result.status == Status::kOk) {
+            if (point_path) {
+                *point_path = trivis_pathfinder::ConvertIDPathToPointPathCities(id_path_no_cities_temp, _reflex_points, source_point, target_point);
+            }
+            if (id_path_no_endpoints) {
+                *id_path_no_endpoints = std::move(id_path_no_cities_temp);
+            }
         }
-        if (id_path_no_endpoints) {
-            *id_path_no_endpoints = std::move(id_path_no_cities_temp);
-        }
-        return length;
+        return result;
     }
-    //LOGF_ERR("[PathFinder::ShortestPathPoints] Could not get the shortest path!");
-    return -1.0;
+    return {.status = Status::kErrorNoReflexVisibilityGraph, .result = -1.0};
 }
 
 void TrivisPathfinder::Clear() {

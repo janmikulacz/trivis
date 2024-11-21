@@ -10,9 +10,9 @@
 #ifndef TRIVIS_PATHFINDER_PATH_FINDER_H_
 #define TRIVIS_PATHFINDER_PATH_FINDER_H_
 
+#include "trivis_pathfinder/status.h"
 #include "trivis_pathfinder/visibility_planner.h"
 #include "trivis_pathfinder/boost_graph.h"
-
 
 #include "trivis/trivis.h"
 
@@ -22,18 +22,18 @@ class TrivisPathfinder {
 
 public:
 
-    bool ConstructReflexVisibilityGraph(const trivis::Trivis &vis);
+    Status ConstructReflexVisibilityGraph(const trivis::Trivis &vis);
 
-    bool PrecomputeReflexShortestPaths();
+    Status PrecomputeReflexShortestPaths();
 
-    bool ConstructCitiesVisibilityGraph(
+    Status ConstructCitiesVisibilityGraph(
         const trivis::Trivis &vis,
         trivis::geom::FPoints cities
     );
 
-    bool PrecomputeCitiesShortestPaths();
+    Status PrecomputeCitiesShortestPaths();
 
-    double ShortestPathReflex(
+    StatusWithResult<double> ShortestPathReflex(
         const trivis::Trivis &vis,
         int source_reflex_id,
         int target_reflex_id,
@@ -41,7 +41,7 @@ public:
         std::vector<int> *id_path_no_endpoints = nullptr
     );
 
-    double ShortestPathCities(
+    StatusWithResult<double> ShortestPathCities(
         const trivis::Trivis &vis,
         int source_city_id,
         int target_city_id,
@@ -49,7 +49,7 @@ public:
         std::vector<int> *id_path_no_endpoints = nullptr
     );
 
-    double ShortestPathPoints(
+    StatusWithResult<double> ShortestPathPoints(
         const trivis::Trivis &vis,
         const trivis::geom::FPoint &source_point,
         const trivis::geom::FPoint &target_point,
