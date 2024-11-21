@@ -3,5 +3,6 @@ channels:
   - conda-forge
   - defaults
 dependencies:
-  - compilers==1.7.0
+  - compilers==1.7
+  - gcc==12.3
   - cmake==3.28.1
