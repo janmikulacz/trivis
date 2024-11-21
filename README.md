@@ -14,16 +14,16 @@ ray-shooting queries, and other visibility-related structures.
 
 - [Definitions](#definitions)
 - [Main Features](#main-features)
-  - [Supported Queries](#supported-queries)
-  - [Worst-Case Query Complexity](#worst-case-query-complexity)
-  - [Efficient Limited-Range Queries](#efficient-limited-range-queries)
-  - [Fast Point Location](#fast-point-location)
-  - [Robustness and Reliability](#robustness-and-reliability)
-  - [Performance on Large Instances](#performance-on-large-instances)
+    - [Supported Queries](#supported-queries)
+    - [Worst-Case Query Complexity](#worst-case-query-complexity)
+    - [Efficient Limited-Range Queries](#efficient-limited-range-queries)
+    - [Fast Point Location](#fast-point-location)
+    - [Robustness and Reliability](#robustness-and-reliability)
+    - [Performance on Large Instances](#performance-on-large-instances)
 - [Building and Linking](#building-and-linking)
 - [Basic Usage](#basic-usage)
-  - [Initialization](#initialization)
-  - [Computing Visibility Queries](#computing-visibility-queries)
+    - [Initialization](#initialization)
+    - [Computing Visibility Queries](#computing-visibility-queries)
 - [Dependencies](#dependencies)
 - [Repository Contents](#repository-contents)
 - [TřiVis Codebase](#třivis-codebase)
@@ -31,9 +31,9 @@ ray-shooting queries, and other visibility-related structures.
 - [TřiVis+](#třivis-1)
 - [Examples](#examples)
 - [Performance Evaluation](#performance-evaluation)
-  - [Replication Guide](#replication-guide-performance-evaluation)
+    - [Replication Guide](#replication-guide-performance-evaluation)
 - [Mesh Optimization](#mesh-optimization)
-  - [Replication Guide](#replication-guide-mesh-optimization)
+    - [Replication Guide](#replication-guide-mesh-optimization)
 - [Documentation](#documentation)
 - [License](#license)
 
@@ -130,8 +130,8 @@ cmake ../trivis
 make
 ```
 
-Apart from TřiVis's source code, this repository also contains [TřiVis+](#třivis-1), an extension adding support for data loading and visualization, and an [Examples](#examples) project depending on TřiVis+,
-demonstrating the library's usage.
+Apart from TřiVis's source code, this repository also contains [TřiVis Pathfinder](#třivis-pathfinder), an extension adding support for pathfinding in polygonal environments, [TřiVis+](#třivis-1), an extension adding support for data loading and visualization, and an [Examples](#examples)
+project depending on TřiVis+, demonstrating the library's usage.
 
 For more information, refer to the [Repository Contents](#repository-contents) section.
 
@@ -248,11 +248,11 @@ std::vector<trivis::geom::FPoint> input_points;
 std::vector<std::optional<trivis::Trivis::PointLocationResult>> input_plrs;
 input_plrs.reserve(input_points.size());
 for (const auto &p : input_points) {
-    input_plrs.push_back(vis.LocatePoint(p));
+input_plrs.push_back(vis.LocatePoint(p));
 }
 if (plr.has_value()) {
-    std::vector<int> visible_points = vis.VisiblePoints(query, plr.value(), input_points, input_plrs, range);
-    // TODO: Do something with the visible points.
+std::vector<int> visible_points = vis.VisiblePoints(query, plr.value(), input_points, input_plrs, range);
+// TODO: Do something with the visible points.
 }
 ```
 
@@ -324,13 +324,15 @@ Assuming we are in the [trivis/](trivis) directory, the root directory of the T�
 
 ## TřiVis Pathfinder
 
-TřiVis Pathfinder is a pathfinding extension of TřiVis that adds support for pathfinding in polygonal environments, i.e., finding the shortest path between two points in a polygonal environment, or between all pairs of points in the environment.
+TřiVis Pathfinder is a pathfinding extension of TřiVis that adds support for pathfinding in polygonal environments, i.e., finding the shortest path between two points in a
+polygonal environment, or between all pairs of points in the environment.
 
 It includes one additional, heavier dependency, which is why it is separated from the TřiVis (core) library:
 
 1. [Boost](https://www.boost.org/), for algorithms and data structures used in pathfinding.
 
-To make TřiVis Pathfinder available to your C++ project, you can copy the [trivis/](trivis) and [trivis_pathfinder/](trivis_pathfinder) directories and include them in your CMakeLists.txt.
+To make TřiVis Pathfinder available to your C++ project, you can copy the [trivis/](trivis) and [trivis_pathfinder/](trivis_pathfinder) directories and include them in your
+CMakeLists.txt.
 
 ```CMake
 add_subdirectory(path_to_trivis) # Add the library to your project.
@@ -338,7 +340,10 @@ add_subdirectory(path_to_trivis_pathfinder) # Add the extension to your project.
 target_link_libraries(your_target PUBLIC TrivisPathfinder) # Link just the extension to your target.
 ```
 
-For your convenience, the [conda/trivis_boost.yml](conda/trivis_boost.yml) file describes [Conda](https://docs.conda.io/en/latest/) environment with the exact compiler, CMake version, and the Boost library used by the authors.
+### TřiVis Pathfinder Environment
+
+For your convenience, the [conda/trivis_boost.yml](conda/trivis_boost.yml) file describes [Conda](https://docs.conda.io/en/latest/) environment with the exact compiler, CMake
+version, and the Boost library used by the authors.
 
 To create and test the environment, run the following in the root directory of this repository:
 
@@ -353,21 +358,25 @@ cmake .
 make
 ```
 
+### TřiVis Pathfinder Codebase
+
 Assuming we are in the [trivis_pathfinder/](trivis_pathfinder) directory, the root directory of the TřiVis Pathfinder codebase, the lower-level directory structure is as follows:
+
 - [include/trivis_pathfinder/](trivis_pathfinder/include/trivis_pathfinder): Header files of the TřiVis Pathfinder extension.
     - [algorithms/](trivis_pathfinder/include/trivis_pathfinder/algorithms): Pathfinding algorithms.
     - [utils/](trivis_pathfinder/include/trivis_pathfinder/utils): General utilities.
     - [trivis_pathfinder.h](trivis_pathfinder/include/trivis_pathfinder/trivis_pathfinder.h): The main TřiVis Pathfinder API.
-- [src/trivis_pathfinder/](trivis_pathfinder/src/trivis_pathfinder): Contains the source files of the TřiVis Pathfinder extension. Copies the structure of [include/trivis_pathfinder/](trivis_pathfinder/include/trivis_pathfinder).
+- [src/trivis_pathfinder/](trivis_pathfinder/src/trivis_pathfinder): Contains the source files of the TřiVis Pathfinder extension. Copies the structure
+  of [include/trivis_pathfinder/](trivis_pathfinder/include/trivis_pathfinder).
 - [CMakelists.txt](trivis_pathfinder/CMakeLists.txt): The CMake configuration file for building the TřiVis Pathfinder extension.
 
-### Basic Usage
+### TřiVis Pathfinder Basic Usage
 
 TODO !
 
-### Examples
+### TřiVis Pathfinder Example
 
-For usage example, refer to the end of the [Examples](#examples) section.
+For usage example, refer to the end of the [Pathfinder Example](#pathfinder-example) section.
 
 ## TřiVis+
 
@@ -386,6 +395,8 @@ add_subdirectory(path_to_trivis_plus) # Add the extension to your project.
 target_link_libraries(your_target PUBLIC TrivisPlus) # Link just the extension to your target.
 ```
 
+### TřiVis+ Environment
+
 For your convenience, the [conda/trivis_boost_cairo.yml](conda/trivis_boost_cairo.yml) file describes [Conda](https://docs.conda.io/en/latest/) environment with the exact compiler,
 CMake version, and the Boost and Cairo libraries used by the authors.
 
@@ -402,6 +413,8 @@ cmake .
 make
 ```
 
+### TřiVis+ Codebase
+
 Assuming we are in the [trivis_plus/](trivis_plus) directory, the root directory of the TřiVis+ codebase, the lower-level directory structure is as follows:
 
 - [include/trivis_plus/](trivis_plus/include/trivis_plus): Header files of the TřiVis+ extension.
@@ -413,35 +426,44 @@ Assuming we are in the [trivis_plus/](trivis_plus) directory, the root directory
   of [include/trivis_plus/](trivis_plus/include/trivis_plus).
 - [CMakelists.txt](trivis_plus/CMakeLists.txt): The CMake configuration file for building the TřiVis+ extension.
 
-For usage examples, refer to the [Examples](#examples) section.
+### TřiVis+ Examples
+
+For usage examples, refer to the [Examples](#examples) section, particularly the source code in the [examples/](examples) directory.
 
 ## Examples
 
 The example project located in the [examples/](examples) directory demonstrates the usage of TřiVis (and secondarily also TřiVis+).
 
 To build the project, you may first need to create the respective Conda environment:
+
 ```bash
 conda env create -f conda/trivis_boost_cairo.yml 
 conda activate trivis
 ```
+
 Alternatively, you may already have all the necessary dependencies installed.
 
 Now, you need to set the environment variables to configure the build:
+
 ```bash
 export TRIVIS_BUILD_TRIVIS_PLUS=1
 export TRIVIS_BUILD_EXAMPLES=1
 ```
+
 Alternatively, you may modify the [setup.bash](setup.bash) to fix the configuration and run `source setup.bash`.
 
 Now, you can build the project:
+
 ```bash
 bash build.bash
 ```
+
 This will create the `build-Release` directory with the executables located in the `build-Release/examples` directory.
 
 Now you can experiment with the examples and once you are done, you can inspect the source codes in the [examples/](examples) directory.
 
-When experimenting with the examples, the default behavior is that the input polygonal environment is loaded from the [data/maps/](data/maps) directory, the text output is printed to the console and the graphical output is saved to the [examples/outputs/](examples/outputs) directory.
+When experimenting with the examples, the default behavior is that the input polygonal environment is loaded from the [data/maps/](data/maps) directory, the text output is printed
+to the console and the graphical output is saved to the [examples/outputs/](examples/outputs) directory.
 
 Next are some examples of how to run the example executables.
 
@@ -455,6 +477,7 @@ Next are some examples of how to run the example executables.
 ```
 
 #### Visibility Region Example
+
 ```bash
 ./build-Release/examples/vis_region
 ./build-Release/examples/vis_region --vis-radius 8
@@ -464,6 +487,7 @@ Next are some examples of how to run the example executables.
 ```
 
 #### Visible Vertices Example
+
 ```bash
 ./build-Release/examples/vis_vertices
 ./build-Release/examples/vis_vertices --reflex-only
@@ -472,6 +496,7 @@ Next are some examples of how to run the example executables.
 ```
 
 #### Visibility Graph Example
+
 ```bash
 ./build-Release/examples/vis_graph
 ./build-Release/examples/vis_graph --reflex-only
@@ -485,24 +510,42 @@ Once you are done experimenting with the examples, and you have inspected the so
 
 For your convenience, we provide the [examples/sandbox.cc](examples/sandbox.cc) file, which you can use as a starting point for your own experiments.
 It is built together with the examples by default, and you can run it as follows:
+
 ```bash
 ./build-Release/examples/sandbox --help # to see all options
 ```
 
-#### Pathfinding Example
+#### Pathfinder Example
+
+To build the Pathfinder example, you need to rebuild the project with the Pathfinder extension, which you can do by setting the following additional environment variable:
+
+```bash
+export TRIVIS_BUILD_TRIVIS_PATHFINDER=1
+```
+
+and then running the build script:
+
+```bash
+bash build.bash
+```
 
 TODO !
 
-
 ## Performance Evaluation
 
-TřiVis, or more specifically, its computation of visibility regions, has been extensively evaluated against several competing implementations on a dataset of 34 complex polygonal environments.
+TřiVis, or more specifically, its computation of visibility regions, has been extensively evaluated against several competing implementations on a dataset of 34 complex polygonal
+environments.
 
 **The competing implementations were:**
-1. **CGAL-TEA-CE:** [CGAL's triangular expansion algorithm](https://doc.cgal.org/latest/Visibility_2/classCGAL_1_1Triangular__expansion__visibility__2.html) (v5.6) with [exact constructions](https://doc.cgal.org/latest/Kernel_23/classCGAL_1_1Exact__predicates__exact__constructions__kernel.html).
-2. **CGAL-TEA-CI:** [CGAL's triangular expansion algorithm](https://doc.cgal.org/latest/Visibility_2/classCGAL_1_1Triangular__expansion__visibility__2.html) (v5.6)  with [inexact constructions](https://doc.cgal.org/latest/Kernel_23/classCGAL_1_1Exact__predicates__inexact__constructions__kernel.html).
-3. **CGAL-RSA-CE:** [CGAL's rotational sweep algorithm](https://doc.cgal.org/latest/Visibility_2/classCGAL_1_1Rotational__sweep__visibility__2.html) (v5.6)  with [exact constructions](https://doc.cgal.org/latest/Kernel_23/classCGAL_1_1Exact__predicates__exact__constructions__kernel.html).
-4. **CGAL-RSA-CI:** [CGAL's rotational sweep algorithm](https://doc.cgal.org/latest/Visibility_2/classCGAL_1_1Rotational__sweep__visibility__2.html) (v5.6) with [inexact constructions](https://doc.cgal.org/latest/Kernel_23/classCGAL_1_1Exact__predicates__inexact__constructions__kernel.html).
+
+1. **CGAL-TEA-CE:** [CGAL's triangular expansion algorithm](https://doc.cgal.org/latest/Visibility_2/classCGAL_1_1Triangular__expansion__visibility__2.html) (v5.6)
+   with [exact constructions](https://doc.cgal.org/latest/Kernel_23/classCGAL_1_1Exact__predicates__exact__constructions__kernel.html).
+2. **CGAL-TEA-CI:** [CGAL's triangular expansion algorithm](https://doc.cgal.org/latest/Visibility_2/classCGAL_1_1Triangular__expansion__visibility__2.html) (v5.6)
+   with [inexact constructions](https://doc.cgal.org/latest/Kernel_23/classCGAL_1_1Exact__predicates__inexact__constructions__kernel.html).
+3. **CGAL-RSA-CE:** [CGAL's rotational sweep algorithm](https://doc.cgal.org/latest/Visibility_2/classCGAL_1_1Rotational__sweep__visibility__2.html) (v5.6)
+   with [exact constructions](https://doc.cgal.org/latest/Kernel_23/classCGAL_1_1Exact__predicates__exact__constructions__kernel.html).
+4. **CGAL-RSA-CI:** [CGAL's rotational sweep algorithm](https://doc.cgal.org/latest/Visibility_2/classCGAL_1_1Rotational__sweep__visibility__2.html) (v5.6)
+   with [inexact constructions](https://doc.cgal.org/latest/Kernel_23/classCGAL_1_1Exact__predicates__inexact__constructions__kernel.html).
 5. **VisiLibity1:** [**VisiLibity**](https://karlobermeyer.github.io/VisiLibity1/) (v1).
 
 The evaluation is detailed in a manuscript currently (as of March 2024) submitted to the 2024 IEEE/RSJ International Conference on Intelligent Robots and Systems (IROS).
@@ -515,34 +558,43 @@ Below is a guide on how to replicate the performance evaluation from the manuscr
 
 The performance evaluation project is located in the [performance/](performance) directory.
 It is dependent on the TřiVis+ extension, and includes two additional dependencies:
+
 1. [CGAL](https://www.cgal.org/) (version 5.6), which can be installed system-wide or in a [Conda](https://docs.conda.io/en/latest/) environment.
 2. [VisiLibity1](https://karlobermeyer.github.io/VisiLibity1/), which is included in the [performance/lib/](performance/lib) directory.
 
 To build the project, you may first need to create the respective Conda environment:
+
 ```bash
 conda env create -f conda/trivis_boost_cairo_cgal.yml
 conda activate trivis
 ```
+
 Alternatively, you may already have all the necessary dependencies installed.
 
 Now, you need to set the environment variables to configure the build:
+
 ```bash
 export TRIVIS_BUILD_TRIVIS_PLUS=1
 export TRIVIS_BUILD_PERFORMANCE=1
 ```
+
 Alternatively, you may modify the [setup.bash](setup.bash) to fix the configuration and run `source setup.bash`.
 
 Building the project is now as simple as running:
+
 ```bash
 bash build.bash
 ```
+
 This will create the `build-Release` directory with the executables located in the `build-Release/performance` directory.
 
 #### Getting the Dataset
 
-> **Note:** The dataset was derived from the [Iron Harvest](https://bitbucket.org/shortestpathlab/benchmarks/src/master/poly-maps/iron-harvest/) dataset ([Harabor et al., 2022](https://doi.org/10.1609/socs.v15i1.21770)).
-We have only preprocessed the dataset to TřiVis's input format by selecting the largest polygon per map, including its holes, and discarding the remaining polygons (mainly artifacts).
-If you are going to use the dataset, please give proper attribution to the authors of the original dataset.
+> **Note:** The dataset was derived from the [Iron Harvest](https://bitbucket.org/shortestpathlab/benchmarks/src/master/poly-maps/iron-harvest/)
+> dataset ([Harabor et al., 2022](https://doi.org/10.1609/socs.v15i1.21770)).
+> We have only preprocessed the dataset to TřiVis's input format by selecting the largest polygon per map, including its holes, and discarding the remaining polygons (mainly
+> artifacts).
+> If you are going to use the dataset, please give proper attribution to the authors of the original dataset.
 
 Download the dataset from [here](https://imr.ciirc.cvut.cz/uploads/Downloads/trivis_performance_dataset.zip) and extract it to the [data/maps/](data/maps) directory.
 
@@ -589,22 +641,25 @@ cd results
 python process1.py
 ```
 
-This will generate the `results.csv` file in the [performance/results/](performance/results) directory, which you can inspect and compare with the authors' results located in the [performance/results/authors_results.csv](performance/results/authors_results.csv) file.
+This will generate the `results.csv` file in the [performance/results/](performance/results) directory, which you can inspect and compare with the authors' results located in
+the [performance/results/authors_results.csv](performance/results/authors_results.csv) file.
 
 ## Mesh Optimization
 
-In our original research ([Mikula and Kulich, 2024](https://link.springer.com/article/10.1007/s42979-023-02561-y)), we have addressed the problem of improving the query performance of the *triangular expansion algorithm* for computing visibility regions by finding the most advantageous instance of the triangular mesh.
+In our original research ([Mikula and Kulich, 2024](https://link.springer.com/article/10.1007/s42979-023-02561-y)), we have addressed the problem of improving the query performance
+of the *triangular expansion algorithm* for computing visibility regions by finding the most advantageous instance of the triangular mesh.
 
-TřiVis (in its earlier stages of development) was used as the basecode for the research, and the mesh optimization project in the [mesh_optim/](mesh_optim) implemented the mesh optimization algorithms and experiments.
+TřiVis (in its earlier stages of development) was used as the basecode for the research, and the mesh optimization project in the [mesh_optim/](mesh_optim) implemented the mesh
+optimization algorithms and experiments.
 
 Below is a guide on how to replicate the experiments from the research.
 
 ### Replication Guide (Mesh Optimization)
 
-> **Note:** The results presented in [Mikula and Kulich (2024)](https://link.springer.com/article/10.1007/s42979-023-02561-y) were obtained using earlier version of TřiVis ([0.3.0](http://imr.ciirc.cvut.cz/uploads/Research/trivis-sn-comp-sci.zip)).
-The current version of [mesh_optim/](mesh_optim) project has been later updated to work with the current versions of TřiVis and TřiVis+.
-However, due to the extensive experiments, the authors have not yet had the time to test the updated version of the project on the full dataset.
-
+> **Note:** The results presented in [Mikula and Kulich (2024)](https://link.springer.com/article/10.1007/s42979-023-02561-y) were obtained using earlier version of
+> TřiVis ([0.3.0](http://imr.ciirc.cvut.cz/uploads/Research/trivis-sn-comp-sci.zip)).
+> The current version of [mesh_optim/](mesh_optim) project has been later updated to work with the current versions of TřiVis and TřiVis+.
+> However, due to the extensive experiments, the authors have not yet had the time to test the updated version of the project on the full dataset.
 
 #### Building the Project
 
@@ -612,66 +667,83 @@ The mesh optimization project is located in the [mesh_optim/](mesh_optim) direct
 It is dependent on the TřiVis+ extension.
 
 To build the project, you may first need to create the respective Conda environment:
+
 ```bash
 conda env create -f conda/trivis_boost_cairo_python.yml
 conda activate trivis
 ```
+
 Alternatively, you may already have all the necessary dependencies installed.
 
 Now, you need to set the environment variables to configure the build:
+
 ```bash
 export TRIVIS_BUILD_TRIVIS_PLUS=1
 export TRIVIS_BUILD_MESH_OPTIM=1
 ```
+
 Alternatively, you may modify the [setup.bash](setup.bash) to fix the configuration and run `source setup.bash`.
 
 Building the project is now as simple as running:
+
 ```bash
 bash build.bash
 ```
+
 This will create the `build-Release` directory with the executables located in the `build-Release/mesh_optim` directory.
 
 #### Getting the Dataset
 
-> **Note:** The dataset was derived from the [Iron Harvest](https://bitbucket.org/shortestpathlab/benchmarks/src/master/poly-maps/iron-harvest/) dataset ([Harabor et al., 2022](https://doi.org/10.1609/socs.v15i1.21770)).
-We have only preprocessed the dataset to TřiVis's input format by selecting the largest polygon per map, including its holes, and discarding the remaining polygons (mainly artifacts).
-Additionally, we have generated simple-polygon versions of the maps, as described in detail in the manuscript ([Mikula and Kulich, 2024](https://link.springer.com/article/10.1007/s42979-023-02561-y)).
-If you are going to use the dataset, please give proper attribution to the authors of the original dataset.
+> **Note:** The dataset was derived from the [Iron Harvest](https://bitbucket.org/shortestpathlab/benchmarks/src/master/poly-maps/iron-harvest/)
+> dataset ([Harabor et al., 2022](https://doi.org/10.1609/socs.v15i1.21770)).
+> We have only preprocessed the dataset to TřiVis's input format by selecting the largest polygon per map, including its holes, and discarding the remaining polygons (mainly
+> artifacts).
+> Additionally, we have generated simple-polygon versions of the maps, as described in detail in the
+> manuscript ([Mikula and Kulich, 2024](https://link.springer.com/article/10.1007/s42979-023-02561-y)).
+> If you are going to use the dataset, please give proper attribution to the authors of the original dataset.
 
 Download the dataset from [here](https://imr.ciirc.cvut.cz/uploads/Downloads/trivis_mesh_optim_dataset.zip) and extract it to the [data/maps/](data/maps) directory.
 
 #### Running the Experiments
 
 To replicate every single experiment from [Mikula and Kulich (2024)](https://link.springer.com/article/10.1007/s42979-023-02561-y), run the following:
+
 ```bash
 cd mesh_optim/experiments
 bash run_experiments_all.bash # this may take a few days
 cd ../..
 ```
+
 Alternatively, you can inspect the scripts in the [mesh_optim/experiments/](mesh_optim/experiments) directory and run them individually.
 
 #### Processing the Results
 
-The results are processed with [datatable](https://datatable.readthedocs.io/en/latest/). To use it, you may need to create a Conda environment with the [conda/datatable.yml](conda/datatable.yml) file:
+The results are processed with [datatable](https://datatable.readthedocs.io/en/latest/). To use it, you may need to create a Conda environment with
+the [conda/datatable.yml](conda/datatable.yml) file:
+
 ```bash
 conda create env -f conda/datatable.yml
 conda activate datatable
 ```
 
 To process all the results, run the following:
+
 ```bash
 cd mesh_optim/results
 bash process_all.bash # this may take several minutes
 cd ../..
 ```
+
 Alternatively, you can inspect the scripts in the [mesh_optim/results/](mesh_optim/results) directory and run them individually.
 
-The results are saved in the [csv/](mesh_optim/results/csv), [figures/](mesh_optim/results/figures), and [tables/](mesh_optim/results/tables) subdirectories of the [mesh_optim/results/](mesh_optim/results) directory.
+The results are saved in the [csv/](mesh_optim/results/csv), [figures/](mesh_optim/results/figures), and [tables/](mesh_optim/results/tables) subdirectories of
+the [mesh_optim/results/](mesh_optim/results) directory.
 
 ## Documentation
 
 Currently, TřiVis lacks detailed documentation beyond this README file due to time constraints faced by the authors.
-However, the simplicity of the API, coupled with the guidance provided in the [Basic Usage](#basic-usage) section and the examples available in the [examples/](examples) directory (further explained in the [Examples](#examples) section), should facilitate seamless adoption of TřiVis for users.
+However, the simplicity of the API, coupled with the guidance provided in the [Basic Usage](#basic-usage) section and the examples available in the [examples/](examples)
+directory (further explained in the [Examples](#examples) section), should facilitate seamless adoption of TřiVis for users.
 
 ## License
 
