@@ -130,7 +130,8 @@ cmake ../trivis
 make
 ```
 
-Apart from TřiVis's source code, this repository also contains [TřiVis Pathfinder](#třivis-pathfinder), an extension adding support for pathfinding in polygonal environments, [TřiVis+](#třivis-1), an extension adding support for data loading and visualization, and an [Examples](#examples)
+Apart from TřiVis's source code, this repository also contains [TřiVis Pathfinder](#třivis-pathfinder), an extension adding support for pathfinding in polygonal
+environments, [TřiVis+](#třivis-1), an extension adding support for data loading and visualization, and an [Examples](#examples)
 project depending on TřiVis+, demonstrating the library's usage.
 
 For more information, refer to the [Repository Contents](#repository-contents) section.
@@ -515,12 +516,14 @@ It is built together with the examples by default, and you can run it as follows
 ./build-Release/examples/sandbox --help # to see all options
 ```
 
-#### Pathfinder Example
+#### Pathfinder Example (Requires TřiVis Pathfinder)
 
-To build the Pathfinder example, you need to rebuild the project with the Pathfinder extension, which you can do by setting the following additional environment variable:
+To build the Pathfinder example, you need to rebuild the project with the Pathfinder extension, which you can do by setting the following environment variables:
 
 ```bash
 export TRIVIS_BUILD_TRIVIS_PATHFINDER=1
+export TRIVIS_BUILD_TRIVIS_PLUS=1
+export TRIVIS_BUILD_EXAMPLES=1
 ```
 
 and then running the build script:
