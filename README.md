@@ -373,7 +373,115 @@ Assuming we are in the [trivis_pathfinder/](trivis_pathfinder) directory, the ro
 
 ### TřiVis Pathfinder Basic Usage
 
-TODO !
+#### Initialization
+
+To use the library in your C++ project, include the main header file:
+
+```C++
+#include "trivis_pathfinder/trivis_pathfinder.h"
+```
+
+TřiVis Pathfinder's main API is the `trivis_pathfinder::TrivisPathfinder` class, which provides methods for pathfinding in polygonal environments.
+
+It is initialized by constructing the visibility graph between all pairs of reflex vertices in the environment.
+To construct the visibility graph, you need to provide the TřiVis object with a mesh.
+
+```C++
+// Initialize the TřiVis object (unless you already have one).
+trivis::Trivis vis;
+{   // Scope for the environment.
+trivis::geom::PolyMap environment;
+// TODO: Fill the environment.
+vis = trivis::Trivis{ std::move(environment) };
+}
+// Initialize the TřiVis Pathfinder object.
+trivis_pathfinder::TrivisPathfinder pathfinder;
+pathfinder.ConstructReflexVisibilityGraph(vis);
+```
+
+The visibility graph is constructed between all pairs of reflex vertices in the environment and stored in the pathfinder object:
+
+```C++
+
+```
+
+The API distinguishes between three types of pathfinding queries: **points**, **cities** and **reflex vertices**.
+
+#### Pathfinding Query: Points
+
+The **points** query finds the shortest path between two given points in the environment provided their coordinates.
+
+```C++
+// Following the initialization:
+pathfinder.PrecomputeReflexShortestPaths(); // Optional precomputation for possible speedup.
+// Prepare the input.
+trivis::geom::FPoint source, target;
+// TODO: Fill the source and target points.
+// Prepare the optional outputs.
+trivis::geom::FPoints points_path; // Output path as a sequence of points (including the endpoints).
+std::vector<int> id_path_no_endpoints; // Output path as a sequence of reflex vertex ids (excluding the endpoints).
+// Compute the shortest path.
+trivis_pathfinder::utils::StatusWithResult<double> result = pathfinder.ShortestPathPoints(vis, source, target, &points_path, &id_path_no_endpoints);
+if (result.status != trivis_pathfinder::utils::Status::kOk) {
+// Something went wrong. Possibly the source or target is outside the environment.
+// TODO: Handle the error.
+}
+double path_length = result.result;
+// TODO: Do something with the path_length, points_path, or id_path_no_endpoints.
+```
+
+#### Pathfinding Query: Cities
+
+This query is intended for pathfinding between multiple pairs (possibly all pairs) of points in the environment, where the set of points, called **the cities**, is known in
+advance.
+
+```C++
+// Following the initialization:
+pathfinder.PrecomputeReflexShortestPaths(); // Optional precomputation for possible speedup.
+// Prepare the cities.
+trivis::geom::FPoints cities;
+// TODO: Fill the cities.
+pathfinder.ConstructCitiesVisibilityGraph(vis, cities); // Mandatory construction of the city-reflex vertex and city-city visibility graphs.
+pathfinder.PrecomputeCitiesShortestPaths(); // Optional precomputation for possible speedup.
+// The pathfinder is now ready to compute the shortest paths between cities, which can be done in a loop or individually.
+// Individual shortest path computation example:
+int source_city_id, target_city_id;
+// TODO: Fill the source_city_id and target_city_id. Range: [0, cities.size()).
+// Prepare the optional outputs.
+trivis::geom::FPoints points_path; // Output path as a sequence of points (including the endpoints).
+std::vector<int> id_path_no_endpoints; // Output path as a sequence of reflex vertex ids (excluding the endpoints).
+// Compute the shortest path.
+trivis_pathfinder::utils::StatusWithResult<double> result = pathfinder.ShortestPathCities(vis, source_city_id, target_city_id, &points_path, &id_path_no_endpoints);
+if (result.status != trivis_pathfinder::utils::Status::kOk) {
+// Something went wrong. Possibly we forgot to compute the visibility graphs, but in this example it should not happen.
+// TODO: Handle the error.
+}
+double path_length = result.result;
+// TODO: Do something with the path_length, points_path, or id_path_no_endpoints.
+```
+
+#### Pathfinding Query: Reflex Vertices
+
+The **reflex vertices** query finds the shortest path between two given reflex vertices in the environment provided their ids.
+
+```C++
+        // Following the initialization:
+pathfinder.PrecomputeReflexShortestPaths(); // Optional precomputation for possible speedup.
+// Prepare the input.
+int source_reflex_id, target_reflex_id;
+// TODO: Fill the source_reflex_id and target_reflex_id. Range: [0, pathfinder.n_reflex()).
+// Prepare the optional outputs.
+trivis::geom::FPoints points_path; // Output path as a sequence of points (including the endpoints).
+std::vector<int> id_path_no_endpoints; // Output path as a sequence of reflex vertex ids (excluding the endpoints).
+// Compute the shortest path.
+trivis_pathfinder::utils::StatusWithResult<double> result = pathfinder.ShortestPathReflex(vis, source_reflex_id, target_reflex_id, &points_path, &id_path_no_endpoints);
+if (result.status != trivis_pathfinder::utils::Status::kOk) {
+// Something went wrong. Possibly we forgot to compute the reflex visibility graph, but in this example it should not happen.
+// TODO: Handle the error.
+}
+double path_length = result.result;
+// TODO: Do something with the path_length, points_path, or id_path_no_endpoints.
+```
 
 ### TřiVis Pathfinder Example
 
@@ -507,18 +615,9 @@ Next are some examples of how to run the example executables.
 ./build-Release/examples/vis_graph --help # to see all options
 ```
 
-Once you are done experimenting with the examples, and you have inspected the source codes, you can start writing your own experimental code based on the examples.
+#### Pathfinder Example
 
-For your convenience, we provide the [examples/sandbox.cc](examples/sandbox.cc) file, which you can use as a starting point for your own experiments.
-It is built together with the examples by default, and you can run it as follows:
-
-```bash
-./build-Release/examples/sandbox --help # to see all options
-```
-
-#### Pathfinder Example (Requires TřiVis Pathfinder)
-
-To build the Pathfinder example, you need to rebuild the project with the Pathfinder extension, which you can do by setting the following environment variables:
+To build the Pathfinder example, you need to rebuild the project with the TřiVis Pathfinder extension, which you can do by setting the following environment variables:
 
 ```bash
 export TRIVIS_BUILD_TRIVIS_PATHFINDER=1
@@ -532,7 +631,25 @@ and then running the build script:
 bash build.bash
 ```
 
-TODO !
+Now you can experiment with the pathfinder executable similarly to the other examples:
+
+```bash
+./build-Release/examples/pathfinder
+./build-Release/examples/pathfinder --x 0.5 --y 18.5 --tx 19.0 --ty 1.0
+./build-Release/examples/pathfinder --all-pairs-reflex
+./build-Release/examples/pathfinder --all-pairs-random-points
+./build-Release/examples/pathfinder --all-pairs-random-points --n-rand-points 50
+./build-Release/examples/pathfinder --help # to see all options
+```
+
+Once you are done experimenting with the examples, and you have inspected the source codes, you can start writing your own experimental code based on the examples.
+
+For your convenience, we provide the [examples/sandbox.cc](examples/sandbox.cc) file, which you can use as a starting point for your own experiments.
+It is built together with the examples by default, and you can run it as follows:
+
+```bash
+./build-Release/examples/sandbox --help # to see all options
+```
 
 ## Performance Evaluation
 

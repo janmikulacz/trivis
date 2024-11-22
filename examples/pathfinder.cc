@@ -431,7 +431,7 @@ int MainBody(const ProgramOptionVariables &pov) {
         clock.Restart();
         std::string pdf_file_str = pov.out_dir + "/";
         if (pov.out_pdf.empty()) {
-            pdf_file_str += "ex_vis_pathfinder";
+            pdf_file_str += "ex_pathfinder";
             if (pov.all_pairs_reflex) {
                 pdf_file_str += "_ap_reflex"; // ap ~ all_pairs
             } else if (pov.all_pairs_random_cities) {
@@ -476,8 +476,12 @@ int MainBody(const ProgramOptionVariables &pov) {
         clock.Restart();
         drawer.OpenPDF(pdf_file_str);
         drawer.DrawMap();
-        for (const auto &sp: shortest_paths) {
-            drawer.DrawPath(sp.points_path, 0.05, dr::kColorRed, 0.25);
+        if (shortest_paths.size() == 1) {
+            drawer.DrawPath(shortest_paths.front().points_path, 0.2, dr::kColorLimeGreen, 0.5);
+        } else {
+            for (const auto &sp: shortest_paths) {
+                drawer.DrawPath(sp.points_path, 0.05, dr::kColorLimeGreen, 0.25);
+            }
         }
         drawer.Close();
         LOGF_INF("DONE. It took " << clock.TimeInSeconds() << " seconds.");
