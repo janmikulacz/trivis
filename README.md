@@ -459,7 +459,7 @@ double path_length = result.result;
 The **reflex vertices** query finds the shortest path between two given reflex vertices in the environment provided their ids.
 
 ```C++
-        // Following the initialization:
+// Following the initialization:
 pathfinder.PrecomputeReflexShortestPaths(); // Optional precomputation for possible speedup.
 // Prepare the input.
 int source_reflex_id, target_reflex_id;
