@@ -390,19 +390,13 @@ To construct the visibility graph, you need to provide the TřiVis object with a
 // Initialize the TřiVis object (unless you already have one).
 trivis::Trivis vis;
 {   // Scope for the environment.
-trivis::geom::PolyMap environment;
-// TODO: Fill the environment.
-vis = trivis::Trivis{ std::move(environment) };
+    trivis::geom::PolyMap environment;
+    // TODO: Fill the environment.
+    vis = trivis::Trivis{std::move(environment)};
 }
 // Initialize the TřiVis Pathfinder object.
 trivis_pathfinder::TrivisPathfinder pathfinder;
 pathfinder.ConstructReflexVisibilityGraph(vis);
-```
-
-The visibility graph is constructed between all pairs of reflex vertices in the environment and stored in the pathfinder object:
-
-```C++
-
 ```
 
 The API distinguishes between three types of pathfinding queries: **points**, **cities** and **reflex vertices**.
@@ -423,8 +417,8 @@ std::vector<int> id_path_no_endpoints; // Output path as a sequence of reflex ve
 // Compute the shortest path.
 trivis_pathfinder::utils::StatusWithResult<double> result = pathfinder.ShortestPathPoints(vis, source, target, &points_path, &id_path_no_endpoints);
 if (result.status != trivis_pathfinder::utils::Status::kOk) {
-// Something went wrong. Possibly the source or target is outside the environment.
-// TODO: Handle the error.
+    // Something went wrong. Possibly the source or target is outside the environment.
+    // TODO: Handle the error.
 }
 double path_length = result.result;
 // TODO: Do something with the path_length, points_path, or id_path_no_endpoints.
@@ -453,8 +447,8 @@ std::vector<int> id_path_no_endpoints; // Output path as a sequence of reflex ve
 // Compute the shortest path.
 trivis_pathfinder::utils::StatusWithResult<double> result = pathfinder.ShortestPathCities(vis, source_city_id, target_city_id, &points_path, &id_path_no_endpoints);
 if (result.status != trivis_pathfinder::utils::Status::kOk) {
-// Something went wrong. Possibly we forgot to compute the visibility graphs, but in this example it should not happen.
-// TODO: Handle the error.
+    // Something went wrong. Possibly we forgot to compute the visibility graphs, but in this example it should not happen.
+    // TODO: Handle the error.
 }
 double path_length = result.result;
 // TODO: Do something with the path_length, points_path, or id_path_no_endpoints.
@@ -476,8 +470,8 @@ std::vector<int> id_path_no_endpoints; // Output path as a sequence of reflex ve
 // Compute the shortest path.
 trivis_pathfinder::utils::StatusWithResult<double> result = pathfinder.ShortestPathReflex(vis, source_reflex_id, target_reflex_id, &points_path, &id_path_no_endpoints);
 if (result.status != trivis_pathfinder::utils::Status::kOk) {
-// Something went wrong. Possibly we forgot to compute the reflex visibility graph, but in this example it should not happen.
-// TODO: Handle the error.
+    // Something went wrong. Possibly we forgot to compute the reflex visibility graph, but in this example it should not happen.
+    // TODO: Handle the error.
 }
 double path_length = result.result;
 // TODO: Do something with the path_length, points_path, or id_path_no_endpoints.
@@ -485,7 +479,7 @@ double path_length = result.result;
 
 ### TřiVis Pathfinder Example
 
-For usage example, refer to the end of the [Pathfinder Example](#pathfinder-example) section.
+For usage example, refer to the [Pathfinder Example](#pathfinder-example) section.
 
 ## TřiVis+
 
