@@ -2,6 +2,12 @@
 
 ***Versatile, Reliable, and High-Performance Tool for Computing Visibility in Polygonal Environments***
 
+If you use TřiVis in academic work, please cite the following paper:
+
+> Mikula, J., Kulich, M., & Přeučil, L. (2024). *TřiVis: Versatile, Reliable, and High-Performance Tool for Computing Visibility in Polygonal Environments*.  
+> In **2024 IEEE/RSJ International Conference on Intelligent Robots and Systems (IROS)**, pp. 10503–10510.  
+> [https://doi.org/10.1109/IROS58592.2024.10801476](https://doi.org/10.1109/IROS58592.2024.10801476)
+
 ## About
 
 TřiVis, named after the Czech word *'tři'* (meaning *'three'*) and the term *'visibility'*, is a C++ library for computing visibility-related structures in 2D polygonal
