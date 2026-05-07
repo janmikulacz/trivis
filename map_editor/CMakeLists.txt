@@ -28,4 +28,5 @@ if(NOT Clipper2_FOUND)
     endif()
 endif()
 
+add_subdirectory(trivis)
 add_subdirectory(clipper_bindings)
