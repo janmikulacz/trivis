@@ -4,65 +4,69 @@
 
 #include <clipper2/clipper.h>
 
+#include <cstddef>
+
 namespace trivis {
+
+// Layout assertions — caught at compile time if Clipper2 is built with USINGZ
+// or if field ordering ever diverges.
+static_assert(sizeof(PointInt) == sizeof(Clipper2Lib::Point64));
+static_assert(offsetof(PointInt, x) == offsetof(Clipper2Lib::Point64, x));
+static_assert(offsetof(PointInt, y) == offsetof(Clipper2Lib::Point64, y));
+
+static_assert(sizeof(RectInt) == sizeof(Clipper2Lib::Rect64));
+static_assert(offsetof(RectInt, left)   == offsetof(Clipper2Lib::Rect64, left));
+static_assert(offsetof(RectInt, top)    == offsetof(Clipper2Lib::Rect64, top));
+static_assert(offsetof(RectInt, right)  == offsetof(Clipper2Lib::Rect64, right));
+static_assert(offsetof(RectInt, bottom) == offsetof(Clipper2Lib::Rect64, bottom));
+
+// std::vector layout: same size regardless of element type (pointer + two size_t).
+static_assert(sizeof(PathInt)  == sizeof(Clipper2Lib::Path64));
+static_assert(sizeof(PathsInt) == sizeof(Clipper2Lib::Paths64));
 
 // ── PointInt ↔ Point64 ───────────────────────────────────────────────────────
 
-inline Clipper2Lib::Point64 ToClipper(const PointInt& p) {
-    return {p.x, p.y};
+inline const Clipper2Lib::Point64& ToClipper(const PointInt& p) {
+    return reinterpret_cast<const Clipper2Lib::Point64&>(p);
 }
 
-inline PointInt FromClipper(const Clipper2Lib::Point64& p) {
-    return {p.x, p.y};
+inline const PointInt& FromClipper(const Clipper2Lib::Point64& p) {
+    return reinterpret_cast<const PointInt&>(p);
 }
 
 // ── PathInt ↔ Path64 ─────────────────────────────────────────────────────────
 
-inline Clipper2Lib::Path64 ToClipper(const PathInt& path) {
-    Clipper2Lib::Path64 result;
-    result.reserve(path.size());
-    for (const auto& pt : path)
-        result.push_back(ToClipper(pt));
-    return result;
+inline const Clipper2Lib::Path64& ToClipper(const PathInt& path) {
+    return reinterpret_cast<const Clipper2Lib::Path64&>(path);
 }
 
-inline PathInt FromClipper(const Clipper2Lib::Path64& path) {
-    PathInt result;
-    result.reserve(path.size());
-    for (const auto& pt : path)
-        result.push_back(FromClipper(pt));
-    return result;
+inline const PathInt& FromClipper(const Clipper2Lib::Path64& path) {
+    return reinterpret_cast<const PathInt&>(path);
 }
 
 // ── PathsInt ↔ Paths64 ───────────────────────────────────────────────────────
 
-inline Clipper2Lib::Paths64 ToClipper(const PathsInt& paths) {
-    Clipper2Lib::Paths64 result;
-    result.reserve(paths.size());
-    for (const auto& path : paths)
-        result.push_back(ToClipper(path));
-    return result;
+inline const Clipper2Lib::Paths64& ToClipper(const PathsInt& paths) {
+    return reinterpret_cast<const Clipper2Lib::Paths64&>(paths);
 }
 
-inline PathsInt FromClipper(const Clipper2Lib::Paths64& paths) {
-    PathsInt result;
-    result.reserve(paths.size());
-    for (const auto& path : paths)
-        result.push_back(FromClipper(path));
-    return result;
+inline const PathsInt& FromClipper(const Clipper2Lib::Paths64& paths) {
+    return reinterpret_cast<const PathsInt&>(paths);
 }
 
 // ── RectInt ↔ Rect64 ─────────────────────────────────────────────────────────
 
-inline Clipper2Lib::Rect64 ToClipper(const RectInt& r) {
-    return {r.left, r.top, r.right, r.bottom};
+inline const Clipper2Lib::Rect64& ToClipper(const RectInt& r) {
+    return reinterpret_cast<const Clipper2Lib::Rect64&>(r);
 }
 
-inline RectInt FromClipper(const Clipper2Lib::Rect64& r) {
-    return {r.left, r.top, r.right, r.bottom};
+inline const RectInt& FromClipper(const Clipper2Lib::Rect64& r) {
+    return reinterpret_cast<const RectInt&>(r);
 }
 
 // ── PolyTreeInt ← PolyPath64 ─────────────────────────────────────────────────
+// PolyPath64 has a base class with parent_ pointer and private fields in a
+// different order, so layout reinterpretation is not safe here.
 // PolyTree64 is a read-only clipper output; there is no ToClipper counterpart.
 
 inline PolyTreeInt FromClipper(const Clipper2Lib::PolyPath64& node) {
