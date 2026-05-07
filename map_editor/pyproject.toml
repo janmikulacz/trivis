@@ -1,0 +1,15 @@
+[project]
+name = "trivis-map-editor"
+version = "0.1.0"
+description = "Polygonal map editor for TřiVis, powered by Clipper2 pybind11 bindings"
+requires-python = ">=3.10"
+dependencies = [
+    "dash>=2.14",
+    "plotly>=5.18",
+    "numpy>=1.26",
+]
+
+[tool.uv]
+# Use the Python supplied by the active mamba environment rather than
+# downloading a standalone Python interpreter.
+python-preference = "only-system"
