@@ -1,0 +1,14 @@
+name: trivis_map_editor
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - compilers==1.7.0
+  - gcc=12.3
+  - cmake==3.28.1
+  - git
+  - pybind11>=2.11
+  - python>=3.10
+  - dash>=2.14
+  - plotly>=5.18
+  - numpy>=1.26
