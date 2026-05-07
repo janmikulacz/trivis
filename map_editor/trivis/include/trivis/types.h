@@ -33,6 +33,22 @@ struct PolyTreeInt {
     std::vector<std::unique_ptr<PolyTreeInt>> children;
 };
 
+// ── Integer geometric types with vertex IDs (maps to Clipper2Z / USINGZ) ─────
+
+struct PointIntId {
+    Int x;
+    Int y;
+    Int id;
+};
+
+using PathIntId  = std::vector<PointIntId>;
+using PathsIntId = std::vector<PathIntId>;
+
+struct PolyTreeIntId {
+    PathIntId polygon;
+    std::vector<std::unique_ptr<PolyTreeIntId>> children;
+};
+
 // ── Float geometric types ─────────────────────────────────────────────────────
 
 struct PointFloat {
