@@ -1,9 +1,55 @@
 #include "trivis/clipper.h"
-#include "trivis/clipper_bridge.h"
 
 #include <clipper2/clipper.h>
 
+#include <cstddef>
+
 namespace trivis {
+
+// ── Bridge: trivis ↔ Clipper2 types ──────────────────────────────────────────
+
+static_assert(sizeof(PointInt) == sizeof(Clipper2Lib::Point64));
+static_assert(offsetof(PointInt, x) == offsetof(Clipper2Lib::Point64, x));
+static_assert(offsetof(PointInt, y) == offsetof(Clipper2Lib::Point64, y));
+
+static_assert(sizeof(RectInt) == sizeof(Clipper2Lib::Rect64));
+static_assert(offsetof(RectInt, left)   == offsetof(Clipper2Lib::Rect64, left));
+static_assert(offsetof(RectInt, top)    == offsetof(Clipper2Lib::Rect64, top));
+static_assert(offsetof(RectInt, right)  == offsetof(Clipper2Lib::Rect64, right));
+static_assert(offsetof(RectInt, bottom) == offsetof(Clipper2Lib::Rect64, bottom));
+
+static_assert(sizeof(PathInt)  == sizeof(Clipper2Lib::Path64));
+static_assert(sizeof(PathsInt) == sizeof(Clipper2Lib::Paths64));
+
+namespace {
+
+const Clipper2Lib::Point64& ToClipper(const PointInt& p) {
+    return reinterpret_cast<const Clipper2Lib::Point64&>(p);
+}
+const Clipper2Lib::Path64& ToClipper(const PathInt& p) {
+    return reinterpret_cast<const Clipper2Lib::Path64&>(p);
+}
+const Clipper2Lib::Paths64& ToClipper(const PathsInt& p) {
+    return reinterpret_cast<const Clipper2Lib::Paths64&>(p);
+}
+const Clipper2Lib::Rect64& ToClipper(const RectInt& r) {
+    return reinterpret_cast<const Clipper2Lib::Rect64&>(r);
+}
+
+const PathsInt& FromClipper(const Clipper2Lib::Paths64& p) {
+    return reinterpret_cast<const PathsInt&>(p);
+}
+
+PolyTreeInt FromClipper(const Clipper2Lib::PolyPath64& node) {
+    PolyTreeInt result;
+    result.polygon = reinterpret_cast<const PathInt&>(node.Polygon());
+    for (const auto& child : node)
+        result.children.push_back(
+            std::make_unique<PolyTreeInt>(FromClipper(*child)));
+    return result;
+}
+
+}  // namespace
 
 // ── Enum value assertions ─────────────────────────────────────────────────────
 
@@ -82,8 +128,8 @@ PathsInt Xor(const PathsInt& subjects, const PathsInt& clips, FillRule fill_rule
 }
 
 PathsInt InflatePaths(const PathsInt& paths, double delta,
-                       JoinType join_type, EndType end_type,
-                       double miter_limit, double arc_tolerance) {
+                      JoinType join_type, EndType end_type,
+                      double miter_limit, double arc_tolerance) {
     PathsInt result;
     Clipper2Lib::ClipperOffset co(miter_limit, arc_tolerance);
     co.AddPaths(ToClipper(paths), C(join_type), C(end_type));
@@ -92,14 +138,11 @@ PathsInt InflatePaths(const PathsInt& paths, double delta,
 }
 
 PathsInt SimplifyPaths(const PathsInt& paths, double epsilon, bool is_open) {
-    PathsInt result;
-    const auto& simplified = Clipper2Lib::SimplifyPaths(ToClipper(paths), epsilon, is_open);
-    result = FromClipper(simplified);
-    return result;
+    return FromClipper(Clipper2Lib::SimplifyPaths(ToClipper(paths), epsilon, is_open));
 }
 
-double Area(const PathInt& path)   { return Clipper2Lib::Area(ToClipper(path)); }
-double Area(const PathsInt& paths) { return Clipper2Lib::Area(ToClipper(paths)); }
+double Area(const PathInt& path)       { return Clipper2Lib::Area(ToClipper(path)); }
+double Area(const PathsInt& paths)     { return Clipper2Lib::Area(ToClipper(paths)); }
 bool   IsPositive(const PathInt& path) { return Clipper2Lib::IsPositive(ToClipper(path)); }
 
 PointInPolygonResult PointInPolygon(const PointInt& pt, const PathInt& polygon) {
@@ -183,10 +226,10 @@ PolyTreeInt ClipperOffset::ExecuteTree(double delta) {
     return FromClipper(polytree);
 }
 
-double ClipperOffset::MiterLimit() const  { return impl_->offset.MiterLimit(); }
-void   ClipperOffset::MiterLimit(double v){ impl_->offset.MiterLimit(v); }
-double ClipperOffset::ArcTolerance() const  { return impl_->offset.ArcTolerance(); }
-void   ClipperOffset::ArcTolerance(double v){ impl_->offset.ArcTolerance(v); }
+double ClipperOffset::MiterLimit() const   { return impl_->offset.MiterLimit(); }
+void   ClipperOffset::MiterLimit(double v) { impl_->offset.MiterLimit(v); }
+double ClipperOffset::ArcTolerance() const   { return impl_->offset.ArcTolerance(); }
+void   ClipperOffset::ArcTolerance(double v) { impl_->offset.ArcTolerance(v); }
 
 void ClipperOffset::Clear() { impl_->offset.Clear(); }
 
