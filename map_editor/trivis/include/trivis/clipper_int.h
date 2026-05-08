@@ -1,6 +1,6 @@
 #pragma once
 
-#include "trivis/types.h"
+#include "trivis/types_int.h"
 
 #include <memory>
 

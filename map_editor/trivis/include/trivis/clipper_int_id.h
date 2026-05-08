@@ -1,7 +1,7 @@
 #pragma once
 
-#include "trivis/clipper.h"   // shared enums: FillRule, ClipType, JoinType, EndType
-#include "trivis/types.h"
+#include "trivis/clipper_int.h"   // shared enums: FillRule, ClipType, JoinType, EndType
+#include "trivis/types_int.h"
 
 #include <memory>
 
