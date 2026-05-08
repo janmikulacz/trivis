@@ -115,40 +115,40 @@ PointInPolygonResult PointInPolygon(const PointIntId& pt, const PathIntId& polyg
         Clipper2Lib::PointInPolygon(ToClipper(pt), ToClipper(polygon)));
 }
 
-// ── ClipperZ ──────────────────────────────────────────────────────────────────
+// ── ClipperIntId ──────────────────────────────────────────────────────────────────
 
-struct ClipperZ::Impl {
+struct ClipperIntId::Impl {
     Clipper2Lib::Clipper64 clipper;
 };
 
-ClipperZ::ClipperZ()  : impl_(std::make_unique<Impl>()) {}
-ClipperZ::~ClipperZ() = default;
-ClipperZ::ClipperZ(ClipperZ&&) noexcept            = default;
-ClipperZ& ClipperZ::operator=(ClipperZ&&) noexcept = default;
+ClipperIntId::ClipperIntId()  : impl_(std::make_unique<Impl>()) {}
+ClipperIntId::~ClipperIntId() = default;
+ClipperIntId::ClipperIntId(ClipperIntId&&) noexcept            = default;
+ClipperIntId& ClipperIntId::operator=(ClipperIntId&&) noexcept = default;
 
-void ClipperZ::AddSubject    (const PathsIntId& s) { impl_->clipper.AddSubject(ToClipper(s)); }
-void ClipperZ::AddOpenSubject(const PathsIntId& s) { impl_->clipper.AddOpenSubject(ToClipper(s)); }
-void ClipperZ::AddClip       (const PathsIntId& c) { impl_->clipper.AddClip(ToClipper(c)); }
+void ClipperIntId::AddSubject    (const PathsIntId& s) { impl_->clipper.AddSubject(ToClipper(s)); }
+void ClipperIntId::AddOpenSubject(const PathsIntId& s) { impl_->clipper.AddOpenSubject(ToClipper(s)); }
+void ClipperIntId::AddClip       (const PathsIntId& c) { impl_->clipper.AddClip(ToClipper(c)); }
 
-bool ClipperZ::Execute(ClipType ct, FillRule fr, PathsIntId& solution) {
+bool ClipperIntId::Execute(ClipType ct, FillRule fr, PathsIntId& solution) {
     return impl_->clipper.Execute(C(ct), C(fr),
                                   reinterpret_cast<Clipper2Lib::Paths64&>(solution));
 }
 
-bool ClipperZ::Execute(ClipType ct, FillRule fr, PathsIntId& closed, PathsIntId& open) {
+bool ClipperIntId::Execute(ClipType ct, FillRule fr, PathsIntId& closed, PathsIntId& open) {
     return impl_->clipper.Execute(C(ct), C(fr),
                                   reinterpret_cast<Clipper2Lib::Paths64&>(closed),
                                   reinterpret_cast<Clipper2Lib::Paths64&>(open));
 }
 
-bool ClipperZ::Execute(ClipType ct, FillRule fr, PolyTreeIntId& tree) {
+bool ClipperIntId::Execute(ClipType ct, FillRule fr, PolyTreeIntId& tree) {
     Clipper2Lib::PolyTree64 polytree;
     bool ok = impl_->clipper.Execute(C(ct), C(fr), polytree);
     if (ok) tree = FromClipper(polytree);
     return ok;
 }
 
-bool ClipperZ::Execute(ClipType ct, FillRule fr, PolyTreeIntId& tree, PathsIntId& open) {
+bool ClipperIntId::Execute(ClipType ct, FillRule fr, PolyTreeIntId& tree, PathsIntId& open) {
     Clipper2Lib::PolyTree64 polytree;
     bool ok = impl_->clipper.Execute(C(ct), C(fr), polytree,
                                      reinterpret_cast<Clipper2Lib::Paths64&>(open));
@@ -156,46 +156,46 @@ bool ClipperZ::Execute(ClipType ct, FillRule fr, PolyTreeIntId& tree, PathsIntId
     return ok;
 }
 
-void ClipperZ::Clear() { impl_->clipper.Clear(); }
+void ClipperIntId::Clear() { impl_->clipper.Clear(); }
 
-// ── ClipperOffsetZ ────────────────────────────────────────────────────────────
+// ── ClipperOffsetIntId ────────────────────────────────────────────────────────────
 
-struct ClipperOffsetZ::Impl {
+struct ClipperOffsetIntId::Impl {
     Clipper2Lib::ClipperOffset offset;
     Impl(double ml, double at, bool pc, bool rs) : offset(ml, at, pc, rs) {}
 };
 
-ClipperOffsetZ::ClipperOffsetZ(double ml, double at, bool pc, bool rs)
+ClipperOffsetIntId::ClipperOffsetIntId(double ml, double at, bool pc, bool rs)
     : impl_(std::make_unique<Impl>(ml, at, pc, rs)) {}
-ClipperOffsetZ::~ClipperOffsetZ() = default;
-ClipperOffsetZ::ClipperOffsetZ(ClipperOffsetZ&&) noexcept            = default;
-ClipperOffsetZ& ClipperOffsetZ::operator=(ClipperOffsetZ&&) noexcept = default;
+ClipperOffsetIntId::~ClipperOffsetIntId() = default;
+ClipperOffsetIntId::ClipperOffsetIntId(ClipperOffsetIntId&&) noexcept            = default;
+ClipperOffsetIntId& ClipperOffsetIntId::operator=(ClipperOffsetIntId&&) noexcept = default;
 
-void ClipperOffsetZ::AddPath(const PathIntId& path, JoinType jt, EndType et) {
+void ClipperOffsetIntId::AddPath(const PathIntId& path, JoinType jt, EndType et) {
     impl_->offset.AddPath(ToClipper(path), C(jt), C(et));
 }
 
-void ClipperOffsetZ::AddPaths(const PathsIntId& paths, JoinType jt, EndType et) {
+void ClipperOffsetIntId::AddPaths(const PathsIntId& paths, JoinType jt, EndType et) {
     impl_->offset.AddPaths(ToClipper(paths), C(jt), C(et));
 }
 
-PathsIntId ClipperOffsetZ::Execute(double delta) {
+PathsIntId ClipperOffsetIntId::Execute(double delta) {
     PathsIntId result;
     impl_->offset.Execute(delta, reinterpret_cast<Clipper2Lib::Paths64&>(result));
     return result;
 }
 
-PolyTreeIntId ClipperOffsetZ::ExecuteTree(double delta) {
+PolyTreeIntId ClipperOffsetIntId::ExecuteTree(double delta) {
     Clipper2Lib::PolyTree64 polytree;
     impl_->offset.Execute(delta, polytree);
     return FromClipper(polytree);
 }
 
-double ClipperOffsetZ::MiterLimit() const   { return impl_->offset.MiterLimit(); }
-void   ClipperOffsetZ::MiterLimit(double v) { impl_->offset.MiterLimit(v); }
-double ClipperOffsetZ::ArcTolerance() const   { return impl_->offset.ArcTolerance(); }
-void   ClipperOffsetZ::ArcTolerance(double v) { impl_->offset.ArcTolerance(v); }
+double ClipperOffsetIntId::MiterLimit() const   { return impl_->offset.MiterLimit(); }
+void   ClipperOffsetIntId::MiterLimit(double v) { impl_->offset.MiterLimit(v); }
+double ClipperOffsetIntId::ArcTolerance() const   { return impl_->offset.ArcTolerance(); }
+void   ClipperOffsetIntId::ArcTolerance(double v) { impl_->offset.ArcTolerance(v); }
 
-void ClipperOffsetZ::Clear() { impl_->offset.Clear(); }
+void ClipperOffsetIntId::Clear() { impl_->offset.Clear(); }
 
 }  // namespace trivis

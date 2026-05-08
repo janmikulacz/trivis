@@ -38,16 +38,16 @@ bool   IsPositive(const PathInt& path);
 
 PointInPolygonResult PointInPolygon(const PointInt& pt, const PathInt& polygon);
 
-// ── Clipper (stateful clipping) ───────────────────────────────────────────────
+// ── ClipperInt (stateful clipping) ───────────────────────────────────────────────
 
-class Clipper {
+class ClipperInt {
     struct Impl;
     std::unique_ptr<Impl> impl_;
 public:
-    Clipper();
-    ~Clipper();
-    Clipper(Clipper&&) noexcept;
-    Clipper& operator=(Clipper&&) noexcept;
+    ClipperInt();
+    ~ClipperInt();
+    ClipperInt(ClipperInt&&) noexcept;
+    ClipperInt& operator=(ClipperInt&&) noexcept;
 
     void AddSubject    (const PathsInt& subjects);
     void AddOpenSubject(const PathsInt& subjects);
@@ -61,18 +61,18 @@ public:
     void Clear();
 };
 
-// ── ClipperOffset (inflate / deflate) ────────────────────────────────────────
+// ── ClipperOffsetInt (inflate / deflate) ────────────────────────────────────────
 
-class ClipperOffset {
+class ClipperOffsetInt {
     struct Impl;
     std::unique_ptr<Impl> impl_;
 public:
-    explicit ClipperOffset(double miter_limit = 2.0, double arc_tolerance = 0.0,
+    explicit ClipperOffsetInt(double miter_limit = 2.0, double arc_tolerance = 0.0,
                            bool preserve_collinear = false,
                            bool reverse_solution  = false);
-    ~ClipperOffset();
-    ClipperOffset(ClipperOffset&&) noexcept;
-    ClipperOffset& operator=(ClipperOffset&&) noexcept;
+    ~ClipperOffsetInt();
+    ClipperOffsetInt(ClipperOffsetInt&&) noexcept;
+    ClipperOffsetInt& operator=(ClipperOffsetInt&&) noexcept;
 
     void AddPath (const PathInt&  path,  JoinType, EndType);
     void AddPaths(const PathsInt& paths, JoinType, EndType);

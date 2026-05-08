@@ -31,16 +31,16 @@ bool   IsPositive(const PathIntId& path);
 
 PointInPolygonResult PointInPolygon(const PointIntId& pt, const PathIntId& polygon);
 
-// ── ClipperZ (stateful clipping with vertex IDs) ──────────────────────────────
+// ── ClipperIntId (stateful clipping with vertex IDs) ──────────────────────────────
 
-class ClipperZ {
+class ClipperIntId {
     struct Impl;
     std::unique_ptr<Impl> impl_;
 public:
-    ClipperZ();
-    ~ClipperZ();
-    ClipperZ(ClipperZ&&) noexcept;
-    ClipperZ& operator=(ClipperZ&&) noexcept;
+    ClipperIntId();
+    ~ClipperIntId();
+    ClipperIntId(ClipperIntId&&) noexcept;
+    ClipperIntId& operator=(ClipperIntId&&) noexcept;
 
     void AddSubject    (const PathsIntId& subjects);
     void AddOpenSubject(const PathsIntId& subjects);
@@ -54,18 +54,18 @@ public:
     void Clear();
 };
 
-// ── ClipperOffsetZ (inflate / deflate with vertex IDs) ───────────────────────
+// ── ClipperOffsetIntId (inflate / deflate with vertex IDs) ───────────────────────
 
-class ClipperOffsetZ {
+class ClipperOffsetIntId {
     struct Impl;
     std::unique_ptr<Impl> impl_;
 public:
-    explicit ClipperOffsetZ(double miter_limit = 2.0, double arc_tolerance = 0.0,
+    explicit ClipperOffsetIntId(double miter_limit = 2.0, double arc_tolerance = 0.0,
                             bool preserve_collinear = false,
                             bool reverse_solution   = false);
-    ~ClipperOffsetZ();
-    ClipperOffsetZ(ClipperOffsetZ&&) noexcept;
-    ClipperOffsetZ& operator=(ClipperOffsetZ&&) noexcept;
+    ~ClipperOffsetIntId();
+    ClipperOffsetIntId(ClipperOffsetIntId&&) noexcept;
+    ClipperOffsetIntId& operator=(ClipperOffsetIntId&&) noexcept;
 
     void AddPath (const PathIntId&  path,  JoinType, EndType);
     void AddPaths(const PathsIntId& paths, JoinType, EndType);
