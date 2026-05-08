@@ -1,4 +1,4 @@
-#include "trivis/clipper_id.h"
+#include "trivis/clipper_int_id.h"
 
 #include <clipper2/clipper.h>   // compiled with USINGZ via Clipper2Z linkage
 

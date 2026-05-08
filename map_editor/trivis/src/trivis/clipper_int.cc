@@ -1,4 +1,4 @@
-#include "trivis/clipper.h"
+#include "trivis/clipper_int.h"
 
 #include <clipper2/clipper.h>
 
